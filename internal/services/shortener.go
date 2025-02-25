@@ -10,7 +10,7 @@ const (
 	maxLen         = 6
 )
 
-func NewShortUrl(url string) string {
+func NewShortURL(url string) string {
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	chars := []rune(availableChars)

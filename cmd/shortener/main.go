@@ -4,7 +4,7 @@ import (
 	"net/http"
 )
 
-var UrlList = make(map[string]string)
+var URLList = make(map[string]string)
 
 func main() {
 	if err := run(); err != nil {
