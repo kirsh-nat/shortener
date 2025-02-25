@@ -1,3 +1,3 @@
-module github.com/kirsh-nat/url-shortener.git
+module github.com/kirsh-nat/shortener.git
 
 go 1.22.11
