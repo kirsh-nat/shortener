@@ -38,7 +38,6 @@ func TestCreateShortURL(t *testing.T) {
 			expected: expected{
 				code:     405,
 				response: ``,
-				//contentType: "text/plain",
 			},
 			request: request{
 				url:    "",
@@ -79,10 +78,10 @@ func TestCreateShortURL(t *testing.T) {
 
 func TestGetURL(t *testing.T) {
 
-	testId := "SVHZQO"
-	_, err := URLList[testId]
+	testID := "SVHZQO"
+	_, err := URLList[testID]
 	if !err {
-		URLList[testId] = "https://ya.ru/"
+		URLList[testID] = "https://ya.ru/"
 	}
 
 	type expected struct {
@@ -105,7 +104,7 @@ func TestGetURL(t *testing.T) {
 				location: `https://ya.ru/`,
 			},
 			request: request{
-				id:     testId,
+				id:     testID,
 				method: http.MethodGet,
 			},
 		},
@@ -116,7 +115,7 @@ func TestGetURL(t *testing.T) {
 				location: ``,
 			},
 			request: request{
-				id:     testId,
+				id:     testID,
 				method: http.MethodPost,
 			},
 		},
