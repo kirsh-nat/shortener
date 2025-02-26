@@ -17,6 +17,7 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 
 	reqURL, _ := io.ReadAll(r.Body)
 	url := string(reqURL)
+	//TODO: check by regular
 	for _, v := range URLList {
 		if v == url {
 			w.WriteHeader(http.StatusBadRequest)
@@ -36,20 +37,18 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 }
 
 func getURL(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
-	redirect, err := URLList[id]
+	id := r.PathValue("id")
+	redirectURL, err := URLList[id]
 	if !err {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+
+	w.Header().Set("Location", redirectURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
-
-	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
-
 }
