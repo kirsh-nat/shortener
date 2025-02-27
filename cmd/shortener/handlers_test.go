@@ -1,78 +1,59 @@
 package main
 
 import (
-	"bytes"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
+func testRequest(t *testing.T, ts *httptest.Server, method,
+	path string) (*http.Response, string) {
+	req, err := http.NewRequest(method, ts.URL+path, nil)
+	require.NoError(t, err)
+
+	resp, err := ts.Client().Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	return resp, string(respBody)
+}
+
 func TestCreateShortURL(t *testing.T) {
-	type expected struct {
-		code     int
-		response string
-	}
-	type request struct {
-		url    string
-		method string
-	}
-	tests := []struct {
-		name     string
-		expected expected
-		request  request
+	ts := httptest.NewServer(routes())
+	defer ts.Close()
+
+	var testTable = []struct {
+		url     string
+		want    string
+		status  int
+		method  string
+		longURL string
 	}{
-		{
-			name: "positive test",
-			expected: expected{
-				code:     201,
-				response: `^http:\/\/localhost:8080\/[A-Z]+$`,
-			},
-			request: request{
-				url:    "https://ya.ru/",
-				method: http.MethodPost,
-			},
-		},
-		{
-			name: "negative test1",
-			expected: expected{
-				code:     405,
-				response: ``,
-			},
-			request: request{
-				url:    "",
-				method: http.MethodGet,
-			},
-		},
-		{
-			name: "negative test2",
-			expected: expected{
-				code:     400,
-				response: ``,
-			},
-			request: request{
-				url:    "https://ya.ru/",
-				method: http.MethodPost,
-			},
-		},
+		{"/", `^http:\/\/localhost:8080\/[A-Z]+$`, http.StatusCreated, http.MethodPost, "https://ya.ru"},
+		{"/", "", http.StatusBadRequest, http.MethodPost, "https://ya.ru"},
+		{"/", "", http.StatusMethodNotAllowed, http.MethodGet, "https://ya.ru"},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			req := httptest.NewRequest(test.request.method, "/", bytes.NewBufferString(test.request.url))
-			rr := httptest.NewRecorder()
-			createShortURL(rr, req)
+	for _, v := range testTable {
+		resp, short := testRequest(t, ts, v.method, v.url)
+		assert.Equal(t, v.status, resp.StatusCode)
 
-			if status := rr.Code; status != test.expected.code {
-				t.Errorf("handler returned wrong status code: got %v expected %v",
-					status, test.expected.code)
-			}
+		fmt.Printf("short: %s\n", short)
 
-			re := regexp.MustCompile(test.expected.response)
-			if body := rr.Body.String(); !re.MatchString(body) {
-				t.Errorf("handler returned wrong response: got %v expected %v",
-					body, test.expected.response)
-			}
-		})
+		re := regexp.MustCompile(v.want)
+		if !re.MatchString(short) {
+			t.Errorf("handler returned wrong response: got %v expected %v",
+				short, v.want)
+		}
+
 	}
 }
 
