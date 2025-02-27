@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -44,10 +43,8 @@ func TestCreateShortURL(t *testing.T) {
 	}
 	for _, v := range testTable {
 		resp, short := testRequest(t, ts, v.method, v.url)
+		defer resp.Body.Close()
 		assert.Equal(t, v.status, resp.StatusCode)
-
-		fmt.Printf("short: %s\n", short)
-
 		re := regexp.MustCompile(v.want)
 		if !re.MatchString(short) {
 			t.Errorf("handler returned wrong response: got %v expected %v",
