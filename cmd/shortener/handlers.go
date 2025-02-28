@@ -7,8 +7,6 @@ import (
 	internal "github.com/kirsh-nat/shortener.git/internal/services"
 )
 
-const localhost = "http://localhost:8080/"
-
 func createShortURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -26,10 +24,8 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	shortURL := internal.NewShortURL(url)
-
 	URLList[shortURL] = url
-
-	response := localhost + shortURL
+	response := "http://" + conf.Resp + "/" + shortURL
 
 	w.WriteHeader(http.StatusCreated)
 	_, _ = w.Write([]byte(response))
