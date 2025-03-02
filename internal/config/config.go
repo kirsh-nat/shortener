@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"os"
 )
 
 type Config struct {
@@ -21,6 +22,12 @@ func SetConfig(c *Config) {
 }
 
 func ValidateConfig(c *Config) {
+	if envAddr := os.Getenv("SERVER_ADDRESS"); envAddr != "" {
+		c.Addr = envAddr
+	}
+	if envResp := os.Getenv("WEB_ADDRESS"); envResp != "" {
+		c.Resp = envResp
+	}
 	if c.Resp != c.Addr {
 		c.Resp = c.Addr
 	}
