@@ -24,6 +24,7 @@ func main() {
 
 func run() error {
 	flag.Parse()
+	config.ValidateConfig(conf)
 	mux := routes()
 	return http.ListenAndServe(conf.Addr, mux)
 }

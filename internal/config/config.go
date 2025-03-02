@@ -19,3 +19,9 @@ func SetConfig(c *Config) {
 		"Базовый адрес результирующего сокращённого URL ",
 	)
 }
+
+func ValidateConfig(c *Config) {
+	if c.Resp != c.Addr {
+		c.Resp = c.Addr
+	}
+}
