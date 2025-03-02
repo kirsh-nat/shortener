@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"net/http"
 
 	"github.com/kirsh-nat/shortener.git/internal/config"
@@ -22,6 +23,7 @@ func main() {
 }
 
 func run() error {
+	flag.Parse()
 	mux := routes()
 	return http.ListenAndServe(conf.Addr, mux)
 }

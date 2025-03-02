@@ -18,5 +18,4 @@ func SetConfig(c *Config) {
 		"b", "localhost:8080",
 		"Базовый адрес результирующего сокращённого URL ",
 	)
-	flag.Parse()
 }

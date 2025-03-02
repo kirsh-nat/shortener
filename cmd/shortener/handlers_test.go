@@ -37,7 +37,7 @@ func TestCreateShortURL(t *testing.T) {
 		method  string
 		longURL string
 	}{
-		{"/", `^http:\/\/localhost:8080\/[A-Z]+$`, http.StatusCreated, http.MethodPost, "https://ya.ru"},
+		{"/", `^http:\/\/` + regexp.QuoteMeta(conf.Addr) + `\/[A-Z]+$`, http.StatusCreated, http.MethodPost, "https://ya.ru"},
 		{"/", "", http.StatusBadRequest, http.MethodPost, "https://ya.ru"},
 		{"/", "", http.StatusMethodNotAllowed, http.MethodGet, "https://ya.ru"},
 	}
