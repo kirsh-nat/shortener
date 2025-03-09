@@ -1,24 +1,14 @@
 package internal
 
 import (
-	"math/rand"
-	"time"
-)
-
-const (
-	availableChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	maxLen         = 6
+	"crypto/sha256"
+	"encoding/hex"
 )
 
 func NewShortURL(url string) string {
-	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	hash := sha256.New()
+	hash.Write([]byte(url))
+	hashed := hash.Sum(nil)
 
-	chars := []rune(availableChars)
-
-	short := make([]rune, maxLen)
-	for i := range short {
-		short[i] = chars[rnd.Intn(len(chars))]
-	}
-
-	return string(short)
+	return hex.EncodeToString(hashed)[:6]
 }
