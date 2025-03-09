@@ -1,10 +1,11 @@
-package main
+package app
 
 import (
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,8 +13,8 @@ import (
 )
 
 func testRequest(t *testing.T, ts *httptest.Server, method,
-	path string) (*http.Response, string) {
-	req, err := http.NewRequest(method, ts.URL+path, nil)
+	path string, body string) (*http.Response, string) {
+	req, err := http.NewRequest(method, ts.URL+path, strings.NewReader(body)) //here
 	require.NoError(t, err)
 
 	resp, err := ts.Client().Do(req)
@@ -27,7 +28,8 @@ func testRequest(t *testing.T, ts *httptest.Server, method,
 }
 
 func TestCreateShortURL(t *testing.T) {
-	ts := httptest.NewServer(routes())
+	SetAppConfig()
+	ts := httptest.NewServer(Routes())
 	defer ts.Close()
 
 	var testTable = []struct {
@@ -37,12 +39,14 @@ func TestCreateShortURL(t *testing.T) {
 		method  string
 		longURL string
 	}{
-		{"/", `^http:\/\/` + regexp.QuoteMeta(conf.Addr) + `\/[A-Z]+$`, http.StatusCreated, http.MethodPost, "https://ya.ru"},
+		//TODO: убрать регулярки
+		{"/", "http://localhost:8080/7e90a4", http.StatusCreated, http.MethodPost, "https://ya.ru"},
 		{"/", "", http.StatusBadRequest, http.MethodPost, "https://ya.ru"},
 		{"/", "", http.StatusMethodNotAllowed, http.MethodGet, "https://ya.ru"},
 	}
 	for _, v := range testTable {
-		resp, short := testRequest(t, ts, v.method, v.url)
+		resp, short := testRequest(t, ts, v.method, v.url, v.longURL)
+
 		defer resp.Body.Close()
 		assert.Equal(t, v.status, resp.StatusCode)
 		re := regexp.MustCompile(v.want)
@@ -57,9 +61,9 @@ func TestCreateShortURL(t *testing.T) {
 func TestGetURL(t *testing.T) {
 
 	testID := "SVHZQO"
-	_, err := URLList[testID]
+	_, err := listURL[testID]
 	if !err {
-		URLList[testID] = "https://ya.ru/"
+		listURL[testID] = "https://ya.ru/"
 	}
 
 	type expected struct {

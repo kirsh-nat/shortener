@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"io"
@@ -13,19 +13,19 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reqURL, _ := io.ReadAll(r.Body)
+	reqURL, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	url := string(reqURL)
-	//TODO: check by regular
-	for _, v := range URLList {
-		if v == url {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+	shortURL, err := internal.AddURL(url, &listURL)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
-	shortURL := internal.NewShortURL(url)
-	URLList[shortURL] = url
-	response := "http://" + conf.Resp + "/" + shortURL
+	response := "http://" + AppSettings.Addr + "/" + shortURL
 
 	w.WriteHeader(http.StatusCreated)
 	_, _ = w.Write([]byte(response))
@@ -39,8 +39,8 @@ func getURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := r.PathValue("id")
-	redirectURL, err := URLList[id]
-	if !err {
+	redirectURL, err := internal.GetURL(id, listURL)
+	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}

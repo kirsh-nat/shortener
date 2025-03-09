@@ -1,30 +1,19 @@
 package main
 
 import (
-	"flag"
 	"net/http"
 
-	"github.com/kirsh-nat/shortener.git/internal/config"
+	"github.com/kirsh-nat/shortener.git/internal/app"
 )
-
-var (
-	URLList = make(map[string]string)
-	conf    = new(config.Config)
-)
-
-func init() {
-	config.SetConfig(conf)
-}
 
 func main() {
+	app.SetAppConfig()
 	if err := run(); err != nil {
 		panic(err)
 	}
 }
 
 func run() error {
-	flag.Parse()
-	config.ValidateConfig(conf)
-	mux := routes()
-	return http.ListenAndServe(conf.Addr, mux)
+	mux := app.Routes()
+	return http.ListenAndServe(app.AppSettings.Addr, mux)
 }
