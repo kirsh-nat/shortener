@@ -11,6 +11,8 @@ const (
 	ErrURLNotFound = "URL not found"
 	ErrURLExist    = "URL already exists"
 	ErrURLFormat   = "string is not a valid URL"
+
+	lenURL = 6 // length of the short URL
 )
 
 func makeShortURL(url string) string {
@@ -18,7 +20,7 @@ func makeShortURL(url string) string {
 	hash.Write([]byte(url))
 	hashed := hash.Sum(nil)
 
-	return hex.EncodeToString(hashed)[:6]
+	return hex.EncodeToString(hashed)[:lenURL]
 }
 
 func AddURL(longURL string, listURL *map[string]string) (string, error) {
