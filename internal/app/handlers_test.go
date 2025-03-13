@@ -39,7 +39,6 @@ func TestCreateShortURL(t *testing.T) {
 		method  string
 		longURL string
 	}{
-		//TODO: убрать регулярки
 		{"/", "http://localhost:8080/7e90a4", http.StatusCreated, http.MethodPost, "https://ya.ru"},
 		{"/", "", http.StatusBadRequest, http.MethodPost, "https://ya.ru"},
 		{"/", "", http.StatusMethodNotAllowed, http.MethodGet, "https://ya.ru"},
