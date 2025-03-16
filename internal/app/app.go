@@ -11,8 +11,6 @@ var (
 	Sugar       zap.SugaredLogger
 )
 
-//TODO: метод на объявление логгера и записи логов в файлик!!!!
-
 func SetAppConfig() {
 	AppSettings = new(config.Config)
 	Store = NewURLStore()
