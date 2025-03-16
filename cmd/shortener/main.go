@@ -6,10 +6,16 @@ import (
 	"github.com/kirsh-nat/shortener.git/internal/app"
 )
 
+// var sugar zap.SugaredLogger
+
 func main() {
+	// создаём предустановленный регистратор zap
+
 	app.SetAppConfig()
+
 	if err := run(); err != nil {
-		panic(err)
+		app.Sugar.Fatalw(err.Error(), "event", "start server")
+		//panic(err)
 	}
 }
 
