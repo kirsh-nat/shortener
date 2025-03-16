@@ -4,7 +4,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 
@@ -40,7 +39,7 @@ func TestCreateShortURL(t *testing.T) {
 		longURL string
 	}{
 		{"/", "http://localhost:8080/7e90a4", http.StatusCreated, http.MethodPost, "https://ya.ru"},
-		{"/", "", http.StatusBadRequest, http.MethodPost, "https://ya.ru"},
+		{"/", "URL already exists", http.StatusBadRequest, http.MethodPost, "https://ya.ru"},
 		{"/", "", http.StatusMethodNotAllowed, http.MethodGet, "https://ya.ru"},
 	}
 	for _, v := range testTable {
@@ -55,8 +54,7 @@ func TestCreateShortURL(t *testing.T) {
 			}
 			continue
 		}
-		respUrl, err := url.ParseRequestURI(short)
-		if err != nil || respUrl.String() != v.want {
+		if short != v.want { //
 			t.Errorf("handler returned wrong response: got %v expected %v",
 				short, v.want)
 		}
