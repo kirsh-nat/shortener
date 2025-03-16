@@ -2,7 +2,6 @@ package config
 
 import (
 	"flag"
-	"fmt"
 	"os"
 )
 
@@ -19,9 +18,11 @@ type Config struct {
 }
 
 func ValidateConfig(c *Config) {
-	fmt.Print(c)
+	if c.Addr == "" {
+		c.Addr = "localhost:8080"
+	}
 	// Пока у нас только один сервер, запросы на короткий урл должны ссылаться также на него
-	if c.Resp != c.Addr {
+	if c.Resp == "" || c.Resp != c.Addr {
 		c.Resp = c.Addr
 	}
 }

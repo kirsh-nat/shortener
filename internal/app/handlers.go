@@ -3,6 +3,7 @@ package app
 import (
 	"io"
 	"net/http"
+	"net/url"
 
 	internal "github.com/kirsh-nat/shortener.git/internal/services"
 )
@@ -10,18 +11,32 @@ import (
 func createShortURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Write([]byte("Method not allowed"))
+
 		return
 	}
 
 	reqURL, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Can't read request body"))
+
 		return
 	}
-	url := string(reqURL)
-	shortURL, err := internal.AddURL(url, &listURL)
+
+	parsedURL, err := url.ParseRequestURI(string(reqURL))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	shortURL := internal.MakeShortURL(parsedURL.String())
+	err = Store.Add(shortURL, parsedURL.String())
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
 		return
 	}
 
@@ -35,13 +50,18 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 func getURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Write([]byte(" Post method not allowed"))
+
 		return
 	}
 
-	id := r.PathValue("id")
-	redirectURL, err := internal.GetURL(id, listURL)
+	short := r.PathValue("id")
+	redirectURL, err := Store.Get(short)
+
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(err.Error()))
+
 		return
 	}
 

@@ -5,12 +5,13 @@ import (
 )
 
 var (
-	listURL     = make(map[string]string)
 	AppSettings = new(config.Config)
+	Store       *URLStore
 )
 
 func SetAppConfig() {
 	AppSettings = new(config.Config)
+	Store = NewURLStore()
 	config.ParseFlags(AppSettings)
 	config.ValidateConfig(AppSettings)
 }

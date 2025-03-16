@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -48,8 +48,15 @@ func TestCreateShortURL(t *testing.T) {
 
 		defer resp.Body.Close()
 		assert.Equal(t, v.status, resp.StatusCode)
-		re := regexp.MustCompile(v.want)
-		if !re.MatchString(short) {
+		if v.want == "" {
+			if short != v.want {
+				t.Errorf("handler returned wrong response: got %v expected %v",
+					short, v.want)
+			}
+			continue
+		}
+		respUrl, err := url.ParseRequestURI(short)
+		if err != nil || respUrl.String() != v.want {
 			t.Errorf("handler returned wrong response: got %v expected %v",
 				short, v.want)
 		}
@@ -58,11 +65,11 @@ func TestCreateShortURL(t *testing.T) {
 }
 
 func TestGetURL(t *testing.T) {
-
+	Store = NewURLStore()
 	testID := "SVHZQO"
-	_, err := listURL[testID]
-	if !err {
-		listURL[testID] = "https://ya.ru/"
+	_, err := Store.Get(testID)
+	if err != nil {
+		Store.Add(testID, "https://ya.ru/")
 	}
 
 	type expected struct {
