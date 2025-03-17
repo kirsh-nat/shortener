@@ -1,6 +1,8 @@
 package app
 
 import (
+	"bytes"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
@@ -130,4 +132,51 @@ func getURL(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Location", redirectURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
+}
+
+func getApiURL(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		var dataURL struct {
+			URL string `json:"url"`
+		}
+
+		var buf bytes.Buffer
+		_, err := buf.ReadFrom(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			Sugar.Error(err)
+			return
+		}
+		if err = json.Unmarshal(buf.Bytes(), &dataURL); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			Sugar.Error(err)
+			return
+		}
+
+		shortURL := internal.MakeShortURL(dataURL.URL)
+		err = Store.Add(shortURL, dataURL.URL)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			Sugar.Error(err)
+			return
+		}
+
+		res := make(map[string]string, 1)
+		res["result"] = "http://" + AppSettings.Resp + "/" + shortURL
+
+		resp, err := json.Marshal(res)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			Sugar.Error(err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		w.Write(resp)
+	} else {
+		Sugar.Infoln("request error method: %v not allowed", r.Method)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 }
