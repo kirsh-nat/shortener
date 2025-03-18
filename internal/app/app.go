@@ -28,12 +28,9 @@ func SetAppConfig() {
 func setLogger() {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
-		// вызываем панику, если ошибка
 		panic(err)
 	}
 	defer logger.Sync()
 
-	// делаем регистратор SugaredLogger
-	// TODO: возмлонжно вообще вынести в конфигу аппы????
 	Sugar = *logger.Sugar()
 }
