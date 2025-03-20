@@ -138,7 +138,7 @@ func TestGetURL(t *testing.T) {
 	}
 }
 
-func TestApiURL(t *testing.T) {
+func TestAPIShorten(t *testing.T) {
 	SetAppConfig()
 	ts := httptest.NewServer(Routes())
 	defer ts.Close()
@@ -154,20 +154,20 @@ func TestApiURL(t *testing.T) {
 		{"/api/shorten", "", http.StatusMethodNotAllowed, http.MethodGet, "{\"url\":\"https://ya.ru\"}"},
 	}
 	for _, v := range testTable {
-		resp, resJson := testRequest(t, ts, v.method, v.url, v.req)
+		resp, res := testRequest(t, ts, v.method, v.url, v.req)
 
 		defer resp.Body.Close()
 		assert.Equal(t, v.status, resp.StatusCode)
 		if v.want == "" {
-			if resJson != v.want {
+			if res != v.want {
 				t.Errorf("handler returned wrong response: got %v expected %v",
-					resJson, v.want)
+					res, v.want)
 			}
 			continue
 		}
-		if resJson != v.want {
+		if res != v.want {
 			t.Errorf("handler returned wrong response: got %v expected %v",
-				resJson, v.want)
+				res, v.want)
 		}
 
 	}

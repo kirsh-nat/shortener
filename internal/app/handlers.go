@@ -134,7 +134,7 @@ func getURL(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-func getApiURL(w http.ResponseWriter, r *http.Request) {
+func getApiShorten(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		var dataURL struct {
 			URL string `json:"url"`
