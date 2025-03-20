@@ -15,8 +15,8 @@ func SetAppConfig() {
 	setLogger()
 	AppSettings = new(config.Config)
 	Store = NewURLStore()
-	config.ParseFlags(AppSettings)
-	config.ValidateConfig(AppSettings)
+	// config.ParseFlags(AppSettings)
+	// config.ValidateConfig(AppSettings)
 
 	Sugar.Infow(
 		"Starting server",
