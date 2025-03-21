@@ -14,7 +14,7 @@ func Routes() *chi.Mux {
 
 	r.Post("/", http.HandlerFunc(WithLogging(createShortURLHandler)))
 	r.Get("/{id}", http.HandlerFunc(WithLogging(http.HandlerFunc(getURL))))
-	r.Get("/api/shorten", http.HandlerFunc(WithLogging(http.HandlerFunc(getAPIShorten))))
+	r.Post("/api/shorten", http.HandlerFunc(WithLogging(http.HandlerFunc(getAPIShorten))))
 
 	return r
 }
