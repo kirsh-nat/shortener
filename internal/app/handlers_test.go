@@ -7,9 +7,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/kirsh-nat/shortener.git/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func init() {
+	SetAppConfig()
+	config.ValidateConfig(AppSettings)
+}
 
 func testRequest(t *testing.T, ts *httptest.Server, method,
 	path string, body string) (*http.Response, string) {
@@ -27,7 +33,6 @@ func testRequest(t *testing.T, ts *httptest.Server, method,
 }
 
 func TestCreateShortURL(t *testing.T) {
-	SetAppConfig()
 	ts := httptest.NewServer(Routes())
 	defer ts.Close()
 
@@ -135,5 +140,36 @@ func TestGetURL(t *testing.T) {
 					location, test.expected.location)
 			}
 		})
+	}
+}
+
+func TestAPIShorten(t *testing.T) {
+	var testTable = []struct {
+		url    string
+		want   string
+		status int
+		method string
+		req    string
+	}{
+		{"/api/shorten", "{\"result\":\"http://localhost:8080/7e90a4\"}", http.StatusCreated, http.MethodPost, "{\"url\":\"https://ya.ru\"}"},
+		{"/api/shorten", "", http.StatusMethodNotAllowed, http.MethodGet, "{\"url\":\"https://ya.ru\"}"},
+	}
+	for _, v := range testTable {
+		req := httptest.NewRequest(v.method, v.url, strings.NewReader(v.req))
+		resp := httptest.NewRecorder()
+		getAPIShorten(resp, req)
+		assert.Equal(t, v.status, resp.Code)
+		if v.want == "" {
+			if resp.Body.String() != v.want {
+				t.Errorf("handler returned wrong response: got %v expected %v",
+					resp.Body.String(), v.want)
+			}
+			continue
+		}
+		if resp.Body.String() != v.want {
+			t.Errorf("handler returned wrong response: got %v expected %v",
+				resp.Body.String(), v.want)
+		}
+
 	}
 }

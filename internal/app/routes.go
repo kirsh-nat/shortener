@@ -1,14 +1,20 @@
 package app
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 )
 
 func Routes() *chi.Mux {
 
 	r := chi.NewRouter()
-	r.Post("/", createShortURL)
-	r.Get("/{id}", getURL)
+
+	createShortURLHandler := http.HandlerFunc(createShortURL)
+
+	r.Post("/", http.HandlerFunc(WithLogging(createShortURLHandler)))
+	r.Get("/{id}", http.HandlerFunc(WithLogging(http.HandlerFunc(getURL))))
+	r.Post("/api/shorten", http.HandlerFunc(WithLogging(http.HandlerFunc(getAPIShorten))))
 
 	return r
 }
