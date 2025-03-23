@@ -64,7 +64,7 @@ func Middleware(h http.Handler) http.HandlerFunc {
 			responseData:   responseData,
 		}
 
-		if !strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			h.ServeHTTP(&lw, r)
 			return
 		}
@@ -76,8 +76,8 @@ func Middleware(h http.Handler) http.HandlerFunc {
 		}
 		defer gz.Close()
 
-		w.Header().Set("Accept-Encoding", "gzip")
-		//	w.Header().Set("Content-Encoding", "gzip")
+		//w.Header().Set("Accept-Encoding", "gzip")
+		w.Header().Set("Content-Encoding", "gzip")
 		h.ServeHTTP(gzipWriter{ResponseWriter: &lw, Writer: gz}, r)
 
 		duration := time.Since(start)
