@@ -69,15 +69,15 @@ func Middleware(h http.Handler) http.HandlerFunc {
 			return
 		}
 
-		gz, err := gzip.NewWriterLevel(&lw, gzip.BestSpeed)
+		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
 		if err != nil {
-			io.WriteString(&lw, err.Error())
+			io.WriteString(w, err.Error())
 			return
 		}
 		defer gz.Close()
 
-		//w.Header().Set("Accept-Encoding", "gzip")
-		lw.Header().Set("Content-Encoding", "gzip")
+		w.Header().Set("Content-Encoding", "gzip")
+
 		h.ServeHTTP(gzipWriter{ResponseWriter: &lw, Writer: gz}, r)
 
 		duration := time.Since(start)
