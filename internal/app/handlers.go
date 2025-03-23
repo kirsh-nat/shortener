@@ -2,10 +2,12 @@ package app
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	internal "github.com/kirsh-nat/shortener.git/internal/services"
@@ -23,7 +25,18 @@ type (
 		http.ResponseWriter // оригинальный http.ResponseWriter
 		responseData        *responseData
 	}
+
+	gzipWriter struct {
+		//	http.ResponseWriter
+		*loggingResponseWriter
+		Writer io.Writer
+	}
 )
+
+func (w gzipWriter) Write(b []byte) (int, error) {
+	// w.Writer будет отвечать за gzip-сжатие, поэтому пишем в него
+	return w.Writer.Write(b)
+}
 
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	size, err := r.ResponseWriter.Write(b)
@@ -37,7 +50,7 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.responseData.status = statusCode // захватываем код статуса
 }
 
-func WithLogging(h http.Handler) http.HandlerFunc {
+func Middleware(h http.Handler) http.HandlerFunc {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		uri := r.RequestURI
@@ -52,7 +65,22 @@ func WithLogging(h http.Handler) http.HandlerFunc {
 			responseData:   responseData,
 		}
 
-		h.ServeHTTP(&lw, r)
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			h.ServeHTTP(&lw, r)
+		} else {
+			gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+			if err != nil {
+				io.WriteString(w, err.Error())
+				return
+			}
+			defer gz.Close()
+			w.Header().Set("Content-Encoding", "gzip")
+			zw := gzipWriter{
+				loggingResponseWriter: &lw,
+			}
+
+			h.ServeHTTP(zw.loggingResponseWriter, r)
+		}
 
 		duration := time.Since(start)
 
