@@ -8,13 +8,15 @@ import (
 var (
 	AppSettings = new(config.Config)
 	Store       *URLStore
-	Sugar       zap.SugaredLogger
+	// InfoURL     *infoURL
+	Sugar zap.SugaredLogger
 )
 
 func SetAppConfig() {
 	setLogger()
 	AppSettings = new(config.Config)
-	Store = NewURLStore()
+	//Store = NewURLStore()
+	//InfoURL = NewInfoURL()
 	// config.ParseFlags(AppSettings)
 	// config.ValidateConfig(AppSettings)
 
