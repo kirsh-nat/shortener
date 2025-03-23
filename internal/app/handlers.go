@@ -27,8 +27,7 @@ type (
 	}
 
 	gzipWriter struct {
-		//	http.ResponseWriter
-		*loggingResponseWriter
+		http.ResponseWriter
 		Writer io.Writer
 	}
 )
@@ -67,20 +66,18 @@ func Middleware(h http.Handler) http.HandlerFunc {
 
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			h.ServeHTTP(&lw, r)
-		} else {
-			gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
-			if err != nil {
-				io.WriteString(w, err.Error())
-				return
-			}
-			defer gz.Close()
-			w.Header().Set("Content-Encoding", "gzip")
-			zw := gzipWriter{
-				loggingResponseWriter: &lw,
-			}
-
-			h.ServeHTTP(zw.loggingResponseWriter, r)
+			return
 		}
+
+		gz, err := gzip.NewWriterLevel(&lw, gzip.BestSpeed)
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		defer gz.Close()
+
+		w.Header().Set("Content-Encoding", "gzip")
+		h.ServeHTTP(gzipWriter{ResponseWriter: &lw, Writer: gz}, r)
 
 		duration := time.Since(start)
 
