@@ -128,12 +128,11 @@ func (s *URLStore) SaveIntoFile(short, long, fname string) error {
 	data = append(data, '\n')
 
 	_, err = file.Write(data)
-	s.listURL[short] = long
-
 	if err != nil {
 		return err
 	}
 
+	s.listURL[short] = long
 	return nil
 }
 
