@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"sync"
@@ -69,7 +68,6 @@ func NewFileWriter(filename string) (*FileWriter, error) {
 }
 
 func NewFileReader(filename string) (*FileReader, error) {
-	fmt.Println(filename, 1111111111111111)
 	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return nil, err

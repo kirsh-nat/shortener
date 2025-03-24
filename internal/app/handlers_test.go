@@ -15,6 +15,8 @@ import (
 func init() {
 	SetAppConfig()
 	config.ValidateConfig(AppSettings)
+	AppSettings.FilePath = "test.txt"
+	Store = NewURLStore(AppSettings.FilePath)
 }
 
 func testRequest(t *testing.T, ts *httptest.Server, method,
@@ -68,7 +70,6 @@ func TestCreateShortURL(t *testing.T) {
 }
 
 func TestGetURL(t *testing.T) {
-	Store = NewURLStore()
 	testID := "SVHZQO"
 	_, err := Store.Get(testID)
 	if err != nil {
