@@ -28,6 +28,7 @@ func ValidateConfig(c *Config) {
 	if c.Resp == "" || c.Resp != c.Addr {
 		c.Resp = c.Addr
 	}
+
 }
 
 func ParseFlags(c *Config) {
@@ -53,5 +54,8 @@ func ParseFlags(c *Config) {
 	}
 	if envResp := os.Getenv(webAddrVar); envResp != "" {
 		c.Resp = envResp
+	}
+	if envPath := os.Getenv(defPathVar); envPath != "" {
+		c.FilePath = envPath
 	}
 }
