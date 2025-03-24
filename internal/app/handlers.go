@@ -133,17 +133,7 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	shortURL := internal.MakeShortURL(parsedURL.String())
-	//	err = Store.Add(shortURL, parsedURL.String()) //worked
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
-		return
-	}
-
 	response := "http://" + AppSettings.Addr + "/" + shortURL
-
-	//infoURL := infoURL{Decode: parsedURL.String(), Encode: shortURL}
 	err = Store.SaveIntoFile(shortURL, parsedURL.String(), AppSettings.FilePath)
 
 	if err != nil {
