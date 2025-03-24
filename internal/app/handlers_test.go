@@ -73,7 +73,7 @@ func TestGetURL(t *testing.T) {
 	testID := "SVHZQO"
 	_, err := Store.Get(testID)
 	if err != nil {
-		Store.Add(testID, "https://ya.ru/")
+		Store.Add(testID, "https://yandex.ru/")
 	}
 
 	type expected struct {
@@ -93,7 +93,7 @@ func TestGetURL(t *testing.T) {
 			name: "positive test",
 			expected: expected{
 				code:     307,
-				location: `https://ya.ru/`,
+				location: `https://yandex.ru/`,
 			},
 			request: request{
 				id:     testID,
@@ -152,8 +152,8 @@ func TestAPIShorten(t *testing.T) {
 		method string
 		req    string
 	}{
-		{"/api/shorten", "{\"result\":\"http://localhost:8080/7e90a4\"}", http.StatusCreated, http.MethodPost, "{\"url\":\"https://ya.ru\"}"},
-		{"/api/shorten", "", http.StatusMethodNotAllowed, http.MethodGet, "{\"url\":\"https://ya.ru\"}"},
+		{"/api/shorten", "{\"result\":\"http://localhost:8080/8a9923\"}", http.StatusCreated, http.MethodPost, "{\"url\":\"https://practicum.yandex.ru\"}"},
+		{"/api/shorten", "", http.StatusMethodNotAllowed, http.MethodGet, "{\"url\":\"https://practicum.yandex.ru\"}"},
 	}
 	for _, v := range testTable {
 		req := httptest.NewRequest(v.method, v.url, strings.NewReader(v.req))
