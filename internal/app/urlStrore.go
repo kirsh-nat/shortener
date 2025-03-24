@@ -47,6 +47,7 @@ func NewURLStore(fname string) *URLStore {
 		Sugar.Error(err)
 		return nil
 	}
+	defer reader.file.Close()
 
 	reader.ReadFile(&URLStore)
 	URLStore.mu.RLock()

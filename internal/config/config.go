@@ -1,7 +1,6 @@
 package config
 
 import (
-	"bufio"
 	"flag"
 	"os"
 )
@@ -19,11 +18,6 @@ type Config struct {
 	Addr     string
 	Resp     string
 	FilePath string
-}
-
-type FileStorage struct {
-	file   *os.File
-	writer *bufio.Writer
 }
 
 func ValidateConfig(c *Config) {
