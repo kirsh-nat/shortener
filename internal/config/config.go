@@ -9,7 +9,7 @@ import (
 const (
 	defAddr    string = "localhost:8080"    // Дефолтный адрес запуска HTTP-сервера
 	defResp    string = "localhost:8080"    // Дефолтный базовый адрес результирующего сокращённого URL
-	defPath    string = "urls.txt"          // Дефолтный адрес файла с ссылками
+	defPath    string = "/tmp/urls.txt"     // Дефолтный адрес файла с ссылками
 	defPathVar string = "FILE_STORAGE_PATH" // Переменная окружения для файла с ссылками
 	srvAddrVar string = "SERVER_ADDRESS"    // Переменная окружения для адреса запуска HTTP-сервера
 	webAddrVar string = "WEB_ADDRESS"       // Переменная окружения для базового адреса результирующего сокращённого URL
