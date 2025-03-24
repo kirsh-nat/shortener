@@ -69,15 +69,15 @@ func Middleware(h http.Handler) http.HandlerFunc {
 			return
 		}
 
-		gz, err := gzip.NewWriterLevel(&lw, gzip.BestSpeed)
+		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
 		if err != nil {
 			io.WriteString(w, err.Error())
 			return
 		}
 		defer gz.Close()
 
-		//w.Header().Set("Accept-Encoding", "gzip")
 		w.Header().Set("Content-Encoding", "gzip")
+
 		h.ServeHTTP(gzipWriter{ResponseWriter: &lw, Writer: gz}, r)
 
 		duration := time.Since(start)
@@ -103,15 +103,25 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Write([]byte("Method not allowed"))
-
 		return
 	}
 
-	reqURL, err := io.ReadAll(r.Body)
+	var body io.Reader = r.Body
+	if r.Header.Get("Content-Encoding") == "gzip" {
+		gz, err := gzip.NewReader(r.Body)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("Can't create gzip reader"))
+			return
+		}
+		defer gz.Close()
+		body = gz
+	}
+
+	reqURL, err := io.ReadAll(body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Can't read request body"))
-
 		return
 	}
 
@@ -145,7 +155,6 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	_, _ = w.Write([]byte(response))
-
 }
 
 func getURL(w http.ResponseWriter, r *http.Request) {
