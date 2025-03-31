@@ -8,17 +8,12 @@ import (
 var (
 	AppSettings = new(config.Config)
 	Store       *URLStore
-	// InfoURL     *infoURL
-	Sugar zap.SugaredLogger
+	Sugar       zap.SugaredLogger
 )
 
 func SetAppConfig() {
 	setLogger()
 	AppSettings = new(config.Config)
-	//Store = NewURLStore()
-	//InfoURL = NewInfoURL()
-	// config.ParseFlags(AppSettings)
-	// config.ValidateConfig(AppSettings)
 
 	Sugar.Infow(
 		"Starting server",
@@ -30,7 +25,8 @@ func SetAppConfig() {
 func setLogger() {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
-		panic(err)
+		Sugar.Fatalw(err.Error(), "event", err)
+
 	}
 	defer logger.Sync()
 

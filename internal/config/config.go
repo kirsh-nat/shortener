@@ -48,7 +48,6 @@ func ParseFlags(c *Config) {
 
 	flag.Parse()
 
-	//Если заданы переменные окружения, меняем настройки в соответвии с ними
 	if envAddr := os.Getenv(srvAddrVar); envAddr != "" {
 		c.Addr = envAddr
 	}
