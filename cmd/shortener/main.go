@@ -17,7 +17,6 @@ func main() {
 
 	if err := run(); err != nil {
 		app.Sugar.Fatalw(err.Error(), "event", "start server")
-		//panic(err)
 	}
 }
 
