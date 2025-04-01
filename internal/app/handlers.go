@@ -213,5 +213,15 @@ func getAPIShorten(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
+}
 
+func pingHandler(w http.ResponseWriter, r *http.Request) {
+	if err := DB.Ping(); err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		Sugar.Error("Database connection error:", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
 }
