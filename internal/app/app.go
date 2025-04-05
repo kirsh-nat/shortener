@@ -36,14 +36,14 @@ func setLogger() {
 	Sugar = *logger.Sugar()
 }
 
-func SetDbConnection(ps string) *sql.DB {
-	db, err := sql.Open("pgx", ps)
+func SetDBConnection(ps string) *sql.DB {
+	DB, err := sql.Open("pgx", ps)
 	if err != nil {
 		Sugar.Fatalw(err.Error(), "event", err)
 		return nil
 	}
 
-	return db
+	return DB
 	//defer db.Close()
 	// ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	// defer cancel()

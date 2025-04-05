@@ -14,7 +14,7 @@ func main() {
 	config.ValidateConfig(app.AppSettings)
 
 	app.Store = app.NewURLStore(app.AppSettings.FilePath)
-	app.DB = app.SetDbConnection(app.AppSettings.DbConnectionString)
+	app.DB = app.SetDBConnection(app.AppSettings.DbConnectionString)
 
 	if err := run(); err != nil {
 		app.Sugar.Fatalw(err.Error(), "event", "start server")
