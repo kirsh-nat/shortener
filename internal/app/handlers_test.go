@@ -7,9 +7,17 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/kirsh-nat/shortener.git/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func init() {
+	SetAppConfig()
+	config.ValidateConfig(AppSettings)
+	AppSettings.FilePath = "test.txt"
+	Store = NewURLStore(AppSettings.FilePath)
+}
 
 func testRequest(t *testing.T, ts *httptest.Server, method,
 	path string, body string) (*http.Response, string) {
@@ -27,7 +35,6 @@ func testRequest(t *testing.T, ts *httptest.Server, method,
 }
 
 func TestCreateShortURL(t *testing.T) {
-	SetAppConfig()
 	ts := httptest.NewServer(Routes())
 	defer ts.Close()
 
@@ -63,11 +70,10 @@ func TestCreateShortURL(t *testing.T) {
 }
 
 func TestGetURL(t *testing.T) {
-	Store = NewURLStore()
 	testID := "SVHZQO"
 	_, err := Store.Get(testID)
 	if err != nil {
-		Store.Add(testID, "https://ya.ru/")
+		Store.Add(testID, "https://yandex.ru/")
 	}
 
 	type expected struct {
@@ -87,7 +93,7 @@ func TestGetURL(t *testing.T) {
 			name: "positive test",
 			expected: expected{
 				code:     307,
-				location: `https://ya.ru/`,
+				location: `https://yandex.ru/`,
 			},
 			request: request{
 				id:     testID,
@@ -135,5 +141,36 @@ func TestGetURL(t *testing.T) {
 					location, test.expected.location)
 			}
 		})
+	}
+}
+
+func TestAPIShorten(t *testing.T) {
+	var testTable = []struct {
+		url    string
+		want   string
+		status int
+		method string
+		req    string
+	}{
+		{"/api/shorten", "{\"result\":\"http://localhost:8080/8a9923\"}", http.StatusCreated, http.MethodPost, "{\"url\":\"https://practicum.yandex.ru\"}"},
+		{"/api/shorten", "", http.StatusMethodNotAllowed, http.MethodGet, "{\"url\":\"https://practicum.yandex.ru\"}"},
+	}
+	for _, v := range testTable {
+		req := httptest.NewRequest(v.method, v.url, strings.NewReader(v.req))
+		resp := httptest.NewRecorder()
+		getAPIShorten(resp, req)
+		assert.Equal(t, v.status, resp.Code)
+		if v.want == "" {
+			if resp.Body.String() != v.want {
+				t.Errorf("handler returned wrong response: got %v expected %v",
+					resp.Body.String(), v.want)
+			}
+			continue
+		}
+		if resp.Body.String() != v.want {
+			t.Errorf("handler returned wrong response: got %v expected %v",
+				resp.Body.String(), v.want)
+		}
+
 	}
 }
