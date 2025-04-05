@@ -12,16 +12,16 @@ const (
 	defPathVar      string = "FILE_STORAGE_PATH" // Переменная окружения для файла с ссылками
 	srvAddrVar      string = "SERVER_ADDRESS"    // Переменная окружения для адреса запуска HTTP-сервера
 	webAddrVar      string = "WEB_ADDRESS"       // Переменная окружения для базового адреса результирующего сокращённого URL
-	DbConnectionVar string = ""                  // Переменная окружения для базового адреса результирующего сокращённого URL
+	SetDBConnection string = ""                  // Переменная окружения для базового адреса результирующего сокращённого URL
 	//TODO: remove!!!
 	dbConnection string = "host=localhost user=admin password=password123 dbname=urldb sslmode=disable"
 )
 
 type Config struct {
-	Addr               string
-	Resp               string
-	FilePath           string
-	DbConnectionString string
+	Addr            string
+	Resp            string
+	FilePath        string
+	SetDBConnection string
 }
 
 func ValidateConfig(c *Config) {
@@ -50,7 +50,7 @@ func ParseFlags(c *Config) {
 		"Путь к файлу с ссылками",
 	)
 
-	flag.StringVar(&c.DbConnectionString,
+	flag.StringVar(&c.SetDBConnection,
 		"d", dbConnection,
 		"Строка подключения к базе данных",
 	)
@@ -66,7 +66,7 @@ func ParseFlags(c *Config) {
 	if envPath := os.Getenv(defPathVar); envPath != "" {
 		c.FilePath = envPath
 	}
-	if envPath := os.Getenv(DbConnectionVar); envPath != "" {
-		c.DbConnectionString = envPath
+	if envPath := os.Getenv(SetDBConnection); envPath != "" {
+		c.SetDBConnection = envPath
 	}
 }
