@@ -236,7 +236,13 @@ func getAPIShorten(w http.ResponseWriter, r *http.Request) {
 
 		shortURL := internal.MakeShortURL(dataURL.URL)
 		shortURL, err = Store.Add(shortURL, dataURL.URL)
-		if err != nil {
+		var dErr *DublicateError
+		if errors.As(err, &dErr) {
+			w.WriteHeader(http.StatusConflict)
+			w.Write([]byte(shortURL))
+			return
+
+		} else if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			Sugar.Error(err)
 			return
