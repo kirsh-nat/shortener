@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -265,7 +266,20 @@ func createBatchURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := Store.InsertBatchURLs(context.Background(), dataURL)
+	var res []byte
+
+	fmt.Println("\n dtorage type \n", Store.typeStorage)
+
+	if Store.typeStorage == typeStorageDB {
+		res, err = Store.InsertBatchURLsIntoDB(context.Background(), dataURL)
+	}
+	if Store.typeStorage == typeStorageFile {
+		res, err = Store.InsertBatchURLsIntoFile(context.Background(), dataURL, AppSettings.FilePath)
+	}
+	if Store.typeStorage == typeStorageMemory {
+		res, err = Store.InsertBatchURLsIntoMemory(context.Background(), dataURL)
+	}
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		Sugar.Error(err)

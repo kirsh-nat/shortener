@@ -48,6 +48,11 @@ type FileReader struct {
 	reader *bufio.Reader
 }
 
+type urlBatchData struct {
+	ID    string `json:"correlation_id"`
+	Short string `json:"short_url"`
+}
+
 func NewInfoURL() *infoURL {
 	return &infoURL{}
 }
@@ -210,7 +215,7 @@ func (s *URLStore) AddURLDBLinks(ctx context.Context, short, long string) error 
 	return nil
 }
 
-func (s *URLStore) InsertBatchURLs(ctx context.Context, data []map[string]string) ([]byte, error) {
+func (s *URLStore) InsertBatchURLsIntoDB(ctx context.Context, data []map[string]string) ([]byte, error) {
 	type urlData struct {
 		ID    string `json:"correlation_id"`
 		Short string `json:"short_url"`
@@ -260,34 +265,71 @@ func (s *URLStore) InsertBatchURLs(ctx context.Context, data []map[string]string
 	return responseJSON, nil
 }
 
-// // working: ctx from handler with timeout
-// func (s *URLStore) GetDBLinks(ctx context.Context) error {
+func (s *URLStore) InsertBatchURLsIntoFile(ctx context.Context, data []map[string]string, fname string) ([]byte, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-// 	rows, err := s.dbConnection.QueryContext(ctx, "SELECT short_url, original_url from links")
-// 	if err != nil {
-// 		Sugar.Error(err)
-// 		return err
-// 	}
-// 	defer rows.Close()
+	var res []urlBatchData
 
-// 	for rows.Next() {
-// 		var (
-// 			short string
-// 			long  string
-// 		)
-// 		err = rows.Scan(&short, &long)
-// 		if err != nil {
-// 			Sugar.Error(err)
-// 			return err
-// 		}
+	file, err := os.OpenFile(fname, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
 
-// 		s.listURL[short] = long
-// 	}
+	m := make(map[string]string)
+	for _, v := range data {
+		code := v["correlation_id"]
+		original := v["original_url"]
+		short := internal.MakeShortURL(original)
 
-// 	err = rows.Err()
-// 	if err != nil {
-// 		Sugar.Error(err)
-// 		return err
-// 	}
-// 	return nil
-// }
+		m[short] = original
+		s.Add(short, original)
+
+		res = append(res, urlBatchData{
+			ID:    code,
+			Short: s.adress + short,
+		})
+	}
+
+	writeData, err := json.MarshalIndent(m, "", "   ")
+	if err != nil {
+		return nil, err
+	}
+	writeData = append(writeData, '\n')
+
+	_, err = file.Write(writeData)
+	if err != nil {
+		return nil, err
+	}
+
+	responseJSON, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	return responseJSON, nil
+}
+
+func (s *URLStore) InsertBatchURLsIntoMemory(ctx context.Context, data []map[string]string) ([]byte, error) {
+	var res []urlBatchData
+
+	for _, v := range data {
+		code := v["correlation_id"]
+		original := v["original_url"]
+		short := internal.MakeShortURL(original)
+		s.Add(short, original)
+
+		res = append(res, urlBatchData{
+			ID:    code,
+			Short: s.adress + short,
+		})
+	}
+
+	responseJSON, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	return responseJSON, nil
+}
