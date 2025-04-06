@@ -16,7 +16,7 @@ func init() {
 	SetAppConfig()
 	config.ValidateConfig(AppSettings)
 	AppSettings.FilePath = "test.txt"
-	Store = NewURLStore(AppSettings.FilePath)
+	Store = NewURLStore(AppSettings)
 }
 
 func testRequest(t *testing.T, ts *httptest.Server, method,

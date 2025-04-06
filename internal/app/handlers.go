@@ -3,7 +3,9 @@ package app
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -99,6 +101,7 @@ func Middleware(h http.Handler) http.HandlerFunc {
 	return logFn
 }
 
+// TODO: вызов к структуре Store
 func createShortURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -134,7 +137,15 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 
 	shortURL := internal.MakeShortURL(parsedURL.String())
 	response := "http://" + AppSettings.Addr + "/" + shortURL
-	err = Store.SaveIntoFile(shortURL, parsedURL.String(), AppSettings.FilePath)
+	if Store.typeStorage == typeStorageDB {
+		err = Store.AddURLDBLinks(context.Background(), shortURL, parsedURL.String())
+	}
+	if Store.typeStorage == typeStorageFile {
+		err = Store.SaveIntoFile(shortURL, parsedURL.String(), AppSettings.FilePath)
+	}
+	if Store.typeStorage == typeStorageMemory {
+		err = Store.Add(shortURL, parsedURL.String())
+	}
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -147,21 +158,28 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(response))
 }
 
+// TODO: вынести Store на верхний уровень
 func getURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		w.Write([]byte(" Post method not allowed"))
-
+		w.Write([]byte("Post method not allowed"))
 		return
 	}
 
 	short := r.PathValue("id")
-	redirectURL, err := Store.Get(short)
+
+	var redirectURL string
+	var err error
+
+	if Store.typeStorage == typeStorageDB {
+		redirectURL, err = Store.GetURLFromDBLinks(context.Background(), short)
+	} else {
+		redirectURL, err = Store.Get(short)
+	}
 
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(err.Error()))
-
 		return
 	}
 
@@ -213,5 +231,62 @@ func getAPIShorten(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
+}
 
+func pingHandler(w http.ResponseWriter, r *http.Request) {
+	if err := DB.Ping(); err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		Sugar.Error("Database connection error:", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+}
+
+func createBatchURLs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Write([]byte("Method not allowed"))
+		return
+	}
+
+	var dataURL []map[string]string
+
+	var buf bytes.Buffer
+	_, err := buf.ReadFrom(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		Sugar.Error(err)
+		return
+	}
+	if err = json.Unmarshal(buf.Bytes(), &dataURL); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		Sugar.Error(err)
+		return
+	}
+
+	var res []byte
+
+	fmt.Println("\n dtorage type \n", Store.typeStorage)
+
+	if Store.typeStorage == typeStorageDB {
+		res, err = Store.InsertBatchURLsIntoDB(context.Background(), dataURL)
+	}
+	if Store.typeStorage == typeStorageFile {
+		res, err = Store.InsertBatchURLsIntoFile(context.Background(), dataURL, AppSettings.FilePath)
+	}
+	if Store.typeStorage == typeStorageMemory {
+		res, err = Store.InsertBatchURLsIntoMemory(context.Background(), dataURL)
+	}
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		Sugar.Error(err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(res)
 }
