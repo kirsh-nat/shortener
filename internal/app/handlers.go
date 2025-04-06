@@ -122,19 +122,6 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	reqURL, err := io.ReadAll(body)
-	var body io.Reader = r.Body
-	if r.Header.Get("Content-Encoding") == "gzip" {
-		gz, err := gzip.NewReader(r.Body)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("Can't create gzip reader"))
-			return
-		}
-		defer gz.Close()
-		body = gz
-	}
-
-	reqURL, err := io.ReadAll(body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Can't read request body"))
@@ -163,7 +150,6 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
-		Sugar.Info("Can't save info in file", err)
 		Sugar.Info("Can't save info in file", err)
 		return
 	}
