@@ -12,6 +12,7 @@ import (
 
 	"github.com/kirsh-nat/shortener.git/internal/config"
 	"github.com/kirsh-nat/shortener.git/internal/migrations"
+	internal "github.com/kirsh-nat/shortener.git/internal/services"
 )
 
 const (
@@ -205,6 +206,65 @@ func (s *URLStore) AddURLDBLinks(ctx context.Context, short, long string) error 
 	}
 
 	return nil
+}
+
+//TODO:  result struct view
+
+// [
+//     {
+//         "correlation_id": "<строковый идентификатор из объекта запроса>",
+//         "short_url": "<результирующий сокращённый URL>"
+//     },
+//     ...
+// ]
+
+func InsertBatchURLs(ctx context.Context, data []map[string]string) ([]byte, error) {
+	type urlData struct {
+		ID    string `json:"correlation_id"`
+		Short string `json:"short_url"`
+	}
+
+	var res []urlData
+
+	tx, err := Store.DBConnection.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.PrepareContext(ctx,
+		"INSERT INTO links (short_url, original_url) VALUES($1, $2)")
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	for _, v := range data {
+		code := v["correlation_id"]
+		original := v["original_url"]
+		short := internal.MakeShortURL(original)
+
+		_, err := stmt.ExecContext(ctx, short, original)
+		if err != nil {
+			return nil, err
+		}
+
+		res = append(res, urlData{
+			ID:    code,
+			Short: short,
+		})
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	responseJSON, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	return responseJSON, nil
 }
 
 // // working: ctx from handler with timeout

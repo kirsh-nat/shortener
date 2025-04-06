@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -241,4 +242,39 @@ func pingHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
+}
+
+func createBatchURLs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Write([]byte("Method not allowed"))
+		return
+	}
+
+	var dataURL []map[string]string
+
+	var buf bytes.Buffer
+	_, err := buf.ReadFrom(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		Sugar.Error(err)
+		return
+	}
+	if err = json.Unmarshal(buf.Bytes(), &dataURL); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		Sugar.Error(err)
+		return
+	}
+	fmt.Println("\n DATA URK \n", dataURL)
+
+	res, err := InsertBatchURLs(context.Background(), dataURL)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		Sugar.Error(err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(res)
 }
