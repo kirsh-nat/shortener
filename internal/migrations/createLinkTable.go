@@ -14,6 +14,9 @@ func CreateLinkTable(db *sql.DB) {
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);	
 	`)
+
+	//	CREATE UNIQUE INDEX short_url_unique ON links (short_url);
+
 	if err != nil {
 		log.Fatal(err)
 	}
