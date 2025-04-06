@@ -12,14 +12,17 @@ func main() {
 
 	config.ParseFlags(app.AppSettings)
 	config.ValidateConfig(app.AppSettings)
-
-	app.Store = app.NewURLStore(app.AppSettings.FilePath)
 	app.DB = app.SetDBConnection(app.AppSettings.SetDBConnection)
+
+	app.Store = app.NewURLStore(app.AppSettings)
 
 	if err := run(); err != nil {
 		app.Sugar.Fatalw(err.Error(), "event", "start server")
 	}
-	defer app.DB.Close()
+	if app.Store.DBConnection != nil {
+		defer app.Store.DBConnection.Close()
+
+	}
 }
 
 func run() error {

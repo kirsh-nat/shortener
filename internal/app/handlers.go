@@ -3,7 +3,9 @@ package app
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -99,6 +101,7 @@ func Middleware(h http.Handler) http.HandlerFunc {
 	return logFn
 }
 
+// TODO: вызов к структуре Store
 func createShortURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -134,7 +137,15 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 
 	shortURL := internal.MakeShortURL(parsedURL.String())
 	response := "http://" + AppSettings.Addr + "/" + shortURL
-	err = Store.SaveIntoFile(shortURL, parsedURL.String(), AppSettings.FilePath)
+	if Store.typeStorage == typeStorageDB {
+		err = Store.AddURLDBLinks(context.Background(), shortURL, parsedURL.String())
+	}
+	if Store.typeStorage == typeStorageFile {
+		err = Store.SaveIntoFile(shortURL, parsedURL.String(), AppSettings.FilePath)
+	}
+	if Store.typeStorage == typeStorageMemory {
+		err = Store.Add(shortURL, parsedURL.String())
+	}
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -147,6 +158,7 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(response))
 }
 
+// TODO: вынести Store на верхний уровень
 func getURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -156,7 +168,15 @@ func getURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	short := r.PathValue("id")
-	redirectURL, err := Store.Get(short)
+
+	redirectURL := ""
+	err := errors.New(ErrURLNotFound)
+
+	if Store.typeStorage == typeStorageDB {
+		redirectURL, err = Store.GetURLFromDBLinks(context.Background(), short)
+	} else {
+		redirectURL, err = Store.Get(short)
+	}
 
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)

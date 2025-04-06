@@ -12,9 +12,7 @@ const (
 	defPathVar      string = "FILE_STORAGE_PATH" // Переменная окружения для файла с ссылками
 	srvAddrVar      string = "SERVER_ADDRESS"    // Переменная окружения для адреса запуска HTTP-сервера
 	webAddrVar      string = "WEB_ADDRESS"       // Переменная окружения для базового адреса результирующего сокращённого URL
-	SetDBConnection string = ""                  // Переменная окружения для базового адреса результирующего сокращённого URL
-	//TODO: remove!!!
-	dbConnection string = "host=localhost user=admin password=password123 dbname=urldb sslmode=disable"
+	SetDBConnection string = "CONNECTION_STRING" // Переменная окружения для базового адреса результирующего сокращённого URL
 )
 
 type Config struct {
@@ -46,12 +44,12 @@ func ParseFlags(c *Config) {
 	)
 
 	flag.StringVar(&c.FilePath,
-		"f", defPath,
+		"f", "",
 		"Путь к файлу с ссылками",
 	)
 
 	flag.StringVar(&c.SetDBConnection,
-		"d", dbConnection,
+		"d", "",
 		"Строка подключения к базе данных",
 	)
 

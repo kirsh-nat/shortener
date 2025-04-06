@@ -2,21 +2,33 @@ package app
 
 import (
 	"bufio"
+	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"io"
 	"os"
 	"sync"
+
+	"github.com/kirsh-nat/shortener.git/internal/config"
+	"github.com/kirsh-nat/shortener.git/internal/migrations"
 )
 
 const (
+	//errors
 	ErrURLNotFound = "URL not found"
 	ErrURLExist    = "URL already exists"
+
+	typeStorageMemory = "memory"
+	typeStorageDB     = "DB"
+	typeStorageFile   = "file"
 )
 
 type URLStore struct {
-	mu      sync.RWMutex
-	listURL map[string]string
+	mu           sync.RWMutex
+	DBConnection *sql.DB
+	listURL      map[string]string
+	typeStorage  string
 }
 
 type infoURL struct {
@@ -38,18 +50,29 @@ func NewInfoURL() *infoURL {
 	return &infoURL{}
 }
 
-func NewURLStore(fname string) *URLStore {
+// TODO: настроуки от  окружения здесь!!!!
+// add typeStorage in struct : memory, file, DB !!!!!
+func NewURLStore(config *config.Config) *URLStore {
 	URLStore := URLStore{
-		listURL: make(map[string]string),
+		listURL:     make(map[string]string),
+		typeStorage: typeStorageMemory,
 	}
-	reader, err := NewFileReader(fname)
-	if err != nil {
-		Sugar.Error(err)
-		return nil
-	}
-	defer reader.file.Close()
+	if config.SetDBConnection != "" {
+		URLStore.DBConnection = SetDBConnection(config.SetDBConnection)
+		URLStore.typeStorage = typeStorageDB
 
-	reader.ReadFile(&URLStore)
+		migrations.CreateLinkTable(URLStore.DBConnection)
+
+	} else if config.FilePath != "" {
+		reader, err := NewFileReader(config.FilePath)
+		if err != nil {
+			Sugar.Error(err)
+			return nil
+		}
+		defer reader.file.Close()
+		reader.ReadFile(&URLStore)
+		URLStore.typeStorage = typeStorageFile
+	}
 	URLStore.mu.RLock()
 	defer URLStore.mu.RUnlock()
 
@@ -153,3 +176,65 @@ func (r FileReader) ReadFile(url *URLStore) error {
 
 	return nil
 }
+
+func (s *URLStore) GetURLFromDBLinks(ctx context.Context, short string) (string, error) {
+
+	row := s.DBConnection.QueryRowContext(ctx,
+		"SELECT original_url from links where short_url = $1", short)
+	var long sql.NullString
+
+	err := row.Scan(&long)
+	if err != nil {
+		Sugar.Error(err)
+		return "", err
+	}
+	if long.Valid {
+		return long.String, nil
+	}
+	return "", errors.New(ErrURLNotFound)
+}
+
+func (s *URLStore) AddURLDBLinks(ctx context.Context, short, long string) error {
+	_, err := s.DBConnection.ExecContext(ctx,
+		"INSERT INTO links (short_url, original_url) VALUES ($1, $2)", short, long)
+	s.listURL[short] = long
+
+	if err != nil {
+		Sugar.Error(err)
+		return err
+	}
+
+	return nil
+}
+
+// // working: ctx from handler with timeout
+// func (s *URLStore) GetDBLinks(ctx context.Context) error {
+
+// 	rows, err := s.dbConnection.QueryContext(ctx, "SELECT short_url, original_url from links")
+// 	if err != nil {
+// 		Sugar.Error(err)
+// 		return err
+// 	}
+// 	defer rows.Close()
+
+// 	for rows.Next() {
+// 		var (
+// 			short string
+// 			long  string
+// 		)
+// 		err = rows.Scan(&short, &long)
+// 		if err != nil {
+// 			Sugar.Error(err)
+// 			return err
+// 		}
+
+// 		s.listURL[short] = long
+// 	}
+
+// 	err = rows.Err()
+// 	if err != nil {
+// 		Sugar.Error(err)
+// 		return err
+// 	}
+// 	return nil
+// }
