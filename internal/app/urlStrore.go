@@ -129,16 +129,17 @@ func NewFileReader(filename string) (*FileReader, error) {
 	}, nil
 }
 
-func (s *URLStore) Add(short, long string) error {
+func (s *URLStore) Add(short, long string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	shortURL := s.adress + short
 	if _, exists := s.listURL[short]; exists {
-		return errors.New(ErrURLExist)
+		return shortURL, NewDublicateError(s.typeStorage, errors.New(ErrURLExist))
 	}
 
 	s.listURL[short] = long
-	return nil
+	return shortURL, nil
 }
 
 func (s *URLStore) Get(short string) (string, error) {
@@ -153,17 +154,18 @@ func (s *URLStore) Get(short string) (string, error) {
 	return long, nil
 }
 
-func (s *URLStore) SaveIntoFile(short, long, fname string) error {
+func (s *URLStore) SaveIntoFile(short, long, fname string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	shortURL := s.adress + short
 	if _, exists := s.listURL[short]; exists {
-		return errors.New(ErrURLExist)
+		return shortURL, NewDublicateError(s.typeStorage, errors.New(ErrURLExist))
 	}
 
 	file, err := os.OpenFile(fname, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer file.Close()
 
@@ -172,17 +174,17 @@ func (s *URLStore) SaveIntoFile(short, long, fname string) error {
 
 	data, err := json.MarshalIndent(m, "", "   ")
 	if err != nil {
-		return err
+		return "", err
 	}
 	data = append(data, '\n')
 
 	_, err = file.Write(data)
 	if err != nil {
-		return err
+		return "", err
 	}
-
 	s.listURL[short] = long
-	return nil
+
+	return shortURL, nil
 }
 
 func (r FileReader) ReadFile(url *URLStore) error {

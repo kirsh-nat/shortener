@@ -146,16 +146,21 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(response))
 			return
 
-		}
-		if err != nil {
+		} else if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
 			return
 		}
 	}
 	if Store.typeStorage == typeStorageFile {
-		err = Store.SaveIntoFile(shortURL, parsedURL.String(), AppSettings.FilePath)
-		if err != nil {
+		response, err = Store.SaveIntoFile(shortURL, parsedURL.String(), AppSettings.FilePath)
+		var dErr *DublicateError
+		if errors.As(err, &dErr) {
+			w.WriteHeader(http.StatusConflict)
+			w.Write([]byte(response))
+			return
+
+		} else if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
 			Sugar.Info("Can't save info in file", err)
@@ -163,8 +168,14 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if Store.typeStorage == typeStorageMemory {
-		err = Store.Add(shortURL, parsedURL.String())
-		if err != nil {
+		response, err = Store.Add(shortURL, parsedURL.String())
+		var dErr *DublicateError
+		if errors.As(err, &dErr) {
+			w.WriteHeader(http.StatusConflict)
+			w.Write([]byte(response))
+			return
+
+		} else if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
 			return
@@ -224,7 +235,7 @@ func getAPIShorten(w http.ResponseWriter, r *http.Request) {
 		}
 
 		shortURL := internal.MakeShortURL(dataURL.URL)
-		err = Store.Add(shortURL, dataURL.URL)
+		shortURL, err = Store.Add(shortURL, dataURL.URL)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			Sugar.Error(err)
