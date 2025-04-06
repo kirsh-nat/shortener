@@ -30,6 +30,7 @@ type URLStore struct {
 	DBConnection *sql.DB
 	listURL      map[string]string
 	typeStorage  string
+	adress       string
 }
 
 type infoURL struct {
@@ -57,6 +58,7 @@ func NewURLStore(config *config.Config) *URLStore {
 	URLStore := URLStore{
 		listURL:     make(map[string]string),
 		typeStorage: typeStorageMemory,
+		adress:      "http://" + config.Addr + "/",
 	}
 	if config.SetDBConnection != "" {
 		URLStore.DBConnection = SetDBConnection(config.SetDBConnection)
@@ -242,7 +244,7 @@ func InsertBatchURLs(ctx context.Context, data []map[string]string) ([]byte, err
 	for _, v := range data {
 		code := v["correlation_id"]
 		original := v["original_url"]
-		short := internal.MakeShortURL(original)
+		short := Store.adress + internal.MakeShortURL(original)
 
 		_, err := stmt.ExecContext(ctx, short, original)
 		if err != nil {
