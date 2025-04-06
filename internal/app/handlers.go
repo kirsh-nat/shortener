@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -101,7 +102,6 @@ func Middleware(h http.Handler) http.HandlerFunc {
 	return logFn
 }
 
-// TODO: вызов к структуре Store
 func createShortURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -136,22 +136,39 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	shortURL := internal.MakeShortURL(parsedURL.String())
-	response := "http://" + AppSettings.Addr + "/" + shortURL
+
+	var response string
 	if Store.typeStorage == typeStorageDB {
-		err = Store.AddURLDBLinks(context.Background(), shortURL, parsedURL.String())
+		response, err = Store.AddURLDBLinks(context.Background(), shortURL, parsedURL.String())
+		var dErr *DublicateError
+		if errors.As(err, &dErr) {
+			w.WriteHeader(http.StatusConflict)
+			w.Write([]byte(response))
+			return
+
+		}
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			return
+		}
 	}
 	if Store.typeStorage == typeStorageFile {
 		err = Store.SaveIntoFile(shortURL, parsedURL.String(), AppSettings.FilePath)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			Sugar.Info("Can't save info in file", err)
+			return
+		}
 	}
 	if Store.typeStorage == typeStorageMemory {
 		err = Store.Add(shortURL, parsedURL.String())
-	}
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
-		Sugar.Info("Can't save info in file", err)
-		return
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			return
+		}
 	}
 
 	w.WriteHeader(http.StatusCreated)

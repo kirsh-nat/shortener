@@ -6,8 +6,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/kirsh-nat/shortener.git/internal/config"
@@ -51,6 +53,22 @@ type FileReader struct {
 type urlBatchData struct {
 	ID    string `json:"correlation_id"`
 	Short string `json:"short_url"`
+}
+
+type DublicateError struct {
+	level string
+	Err   error
+}
+
+func (le *DublicateError) Error() string {
+	return fmt.Sprintf("[%s] %v", le.level, le.Err)
+}
+
+func NewDublicateError(label string, err error) error {
+	return &DublicateError{
+		level: strings.ToUpper(label),
+		Err:   err,
+	}
 }
 
 func NewInfoURL() *infoURL {
@@ -202,17 +220,30 @@ func (s *URLStore) GetURLFromDBLinks(ctx context.Context, short string) (string,
 	return "", errors.New(ErrURLNotFound)
 }
 
-func (s *URLStore) AddURLDBLinks(ctx context.Context, short, long string) error {
-	_, err := s.DBConnection.ExecContext(ctx,
-		"INSERT INTO links (short_url, original_url) VALUES ($1, $2)", short, long)
-	s.listURL[short] = long
+func (s *URLStore) AddURLDBLinks(ctx context.Context, short, long string) (string, error) {
+	var code string
+	var isNew bool
+
+	err := s.DBConnection.QueryRowContext(ctx,
+		"WITH upsert AS (INSERT INTO links (short_url, original_url) VALUES ($1, $2) ON CONFLICT (short_url) DO UPDATE SET original_url = EXCLUDED.original_url RETURNING short_url, CASE WHEN NOT EXISTS (SELECT 1 FROM links WHERE short_url = $1) THEN true ELSE false END AS is_new) SELECT is_new FROM upsert",
+		short, long).Scan(&isNew)
 
 	if err != nil {
+		if err == sql.ErrNoRows {
+			Sugar.Error("No rows found")
+			return "", err
+		}
 		Sugar.Error(err)
-		return err
+		return "", err
 	}
 
-	return nil
+	shortURL := s.adress + code
+
+	if !isNew {
+		return shortURL, NewDublicateError(s.typeStorage, err)
+	}
+
+	return shortURL, nil
 }
 
 func (s *URLStore) InsertBatchURLsIntoDB(ctx context.Context, data []map[string]string) ([]byte, error) {
