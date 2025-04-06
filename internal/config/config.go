@@ -12,7 +12,7 @@ const (
 	defPathVar      string = "FILE_STORAGE_PATH" // Переменная окружения для файла с ссылками
 	srvAddrVar      string = "SERVER_ADDRESS"    // Переменная окружения для адреса запуска HTTP-сервера
 	webAddrVar      string = "WEB_ADDRESS"       // Переменная окружения для базового адреса результирующего сокращённого URL
-	SetDBConnection string = "CONNECTION_STRING" // Переменная окружения для базового адреса результирующего сокращённого URL
+	SetDBConnection string = "DATABASE_DSN"      // Переменная окружения для базового адреса результирующего сокращённого URL
 )
 
 type Config struct {
