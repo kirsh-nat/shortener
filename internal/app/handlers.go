@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -162,15 +161,14 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 func getURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		w.Write([]byte(" Post method not allowed"))
-
+		w.Write([]byte("Post method not allowed"))
 		return
 	}
 
 	short := r.PathValue("id")
 
-	redirectURL := ""
-	err := errors.New(ErrURLNotFound)
+	var redirectURL string
+	var err error
 
 	if Store.typeStorage == typeStorageDB {
 		redirectURL, err = Store.GetURLFromDBLinks(context.Background(), short)
@@ -181,7 +179,6 @@ func getURL(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(err.Error()))
-
 		return
 	}
 
