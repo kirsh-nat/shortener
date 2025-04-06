@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -265,7 +264,6 @@ func createBatchURLs(w http.ResponseWriter, r *http.Request) {
 		Sugar.Error(err)
 		return
 	}
-	fmt.Println("\n DATA URK \n", dataURL)
 
 	res, err := Store.InsertBatchURLs(context.Background(), dataURL)
 	if err != nil {

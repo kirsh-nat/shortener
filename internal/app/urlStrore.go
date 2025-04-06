@@ -234,17 +234,17 @@ func (s *URLStore) InsertBatchURLs(ctx context.Context, data []map[string]string
 	for _, v := range data {
 		code := v["correlation_id"]
 		original := v["original_url"]
-		short := s.adress + internal.MakeShortURL(original)
+		short := internal.MakeShortURL(original)
 
 		_, err := stmt.ExecContext(ctx, short, original)
 		if err != nil {
 			return nil, err
 		}
-		s.listURL[short] = original
+		s.Add(short, original)
 
 		res = append(res, urlData{
 			ID:    code,
-			Short: short,
+			Short: s.adress + short,
 		})
 	}
 
