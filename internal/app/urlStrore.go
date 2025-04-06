@@ -210,17 +210,7 @@ func (s *URLStore) AddURLDBLinks(ctx context.Context, short, long string) error 
 	return nil
 }
 
-//TODO:  result struct view
-
-// [
-//     {
-//         "correlation_id": "<строковый идентификатор из объекта запроса>",
-//         "short_url": "<результирующий сокращённый URL>"
-//     },
-//     ...
-// ]
-
-func InsertBatchURLs(ctx context.Context, data []map[string]string) ([]byte, error) {
+func (s *URLStore) InsertBatchURLs(ctx context.Context, data []map[string]string) ([]byte, error) {
 	type urlData struct {
 		ID    string `json:"correlation_id"`
 		Short string `json:"short_url"`
@@ -228,7 +218,7 @@ func InsertBatchURLs(ctx context.Context, data []map[string]string) ([]byte, err
 
 	var res []urlData
 
-	tx, err := Store.DBConnection.Begin()
+	tx, err := s.DBConnection.Begin()
 	if err != nil {
 		return nil, err
 	}
@@ -244,12 +234,13 @@ func InsertBatchURLs(ctx context.Context, data []map[string]string) ([]byte, err
 	for _, v := range data {
 		code := v["correlation_id"]
 		original := v["original_url"]
-		short := Store.adress + internal.MakeShortURL(original)
+		short := s.adress + internal.MakeShortURL(original)
 
 		_, err := stmt.ExecContext(ctx, short, original)
 		if err != nil {
 			return nil, err
 		}
+		s.listURL[short] = original
 
 		res = append(res, urlData{
 			ID:    code,

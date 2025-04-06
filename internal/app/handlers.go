@@ -267,7 +267,7 @@ func createBatchURLs(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("\n DATA URK \n", dataURL)
 
-	res, err := InsertBatchURLs(context.Background(), dataURL)
+	res, err := Store.InsertBatchURLs(context.Background(), dataURL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		Sugar.Error(err)
