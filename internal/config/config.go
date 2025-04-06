@@ -6,15 +6,18 @@ import (
 )
 
 const (
-	defAddr    string = "localhost:8080" // Дефолтный адрес запуска HTTP-сервера
-	defResp    string = "localhost:8080" // Дефолтный базовый адрес результирующего сокращённого URL
-	srvAddrVar string = "SERVER_ADDRESS" // Переменная окружения для адреса запуска HTTP-сервера
-	webAddrVar string = "WEB_ADDRESS"    // Переменная окружения для базового адреса результирующего сокращённого URL
+	defAddr    string = "localhost:8080"    // Дефолтный адрес запуска HTTP-сервера
+	defResp    string = "localhost:8080"    // Дефолтный базовый адрес результирующего сокращённого URL
+	defPath    string = "/tmp/urls.txt"     // Дефолтный адрес файла с ссылками
+	defPathVar string = "FILE_STORAGE_PATH" // Переменная окружения для файла с ссылками
+	srvAddrVar string = "SERVER_ADDRESS"    // Переменная окружения для адреса запуска HTTP-сервера
+	webAddrVar string = "WEB_ADDRESS"       // Переменная окружения для базового адреса результирующего сокращённого URL
 )
 
 type Config struct {
-	Addr string
-	Resp string
+	Addr     string
+	Resp     string
+	FilePath string
 }
 
 func ValidateConfig(c *Config) {
@@ -25,6 +28,7 @@ func ValidateConfig(c *Config) {
 	if c.Resp == "" || c.Resp != c.Addr {
 		c.Resp = c.Addr
 	}
+
 }
 
 func ParseFlags(c *Config) {
@@ -36,13 +40,21 @@ func ParseFlags(c *Config) {
 		"b", defResp,
 		"Базовый адрес результирующего сокращённого URL ",
 	)
+
+	flag.StringVar(&c.FilePath,
+		"f", defPath,
+		"Путь к файлу с ссылками",
+	)
+
 	flag.Parse()
 
-	//Если заданы переменные окружения, меняем настройки в соответвии с ними
 	if envAddr := os.Getenv(srvAddrVar); envAddr != "" {
 		c.Addr = envAddr
 	}
 	if envResp := os.Getenv(webAddrVar); envResp != "" {
 		c.Resp = envResp
+	}
+	if envPath := os.Getenv(defPathVar); envPath != "" {
+		c.FilePath = envPath
 	}
 }
