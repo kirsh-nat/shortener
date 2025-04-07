@@ -281,21 +281,8 @@ func getAPIShorten(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		//shortURL, err = Store.Add(shortURL, dataURL.URL)
-		// var dErr *DublicateError
-		// if errors.As(err, &dErr) {
-		// 	w.WriteHeader(http.StatusConflict)
-		// 	w.Write([]byte(shortURL))
-		// 	return
-
-		// } else if err != nil {
-		// 	http.Error(w, err.Error(), http.StatusBadRequest)
-		// 	Sugar.Error(err)
-		// 	return
-		// }
-
 		res := make(map[string]string, 1)
-		res["result"] = shortURL
+		res["result"] = response //shortURL
 
 		resp, err := json.Marshal(res)
 		if err != nil {
