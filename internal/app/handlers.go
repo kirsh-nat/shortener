@@ -233,7 +233,7 @@ func getAPIShorten(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
+		//w.Header().Set("Content-Type", "application/json")
 		shortURL := internal.MakeShortURL(dataURL.URL)
 		shortURL, err = Store.Add(shortURL, dataURL.URL)
 		var dErr *DublicateError
