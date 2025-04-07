@@ -241,7 +241,17 @@ func getAPIShorten(w http.ResponseWriter, r *http.Request) {
 			var dErr *DublicateError
 			if errors.As(err, &dErr) {
 				w.WriteHeader(http.StatusConflict)
-				response, _ := json.Marshal(response)
+				res := make(map[string]string, 1)
+				res["result"] = response //shortURL
+
+				response, _ := json.Marshal(res)
+				// if err != nil {
+				// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+				// 	Sugar.Error(err)
+				// 	return
+				// }
+
+				//response, _ := json.Marshal(response)
 				w.Write(response)
 				return
 
