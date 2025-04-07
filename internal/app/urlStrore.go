@@ -223,30 +223,43 @@ func (s *URLStore) GetURLFromDBLinks(ctx context.Context, short string) (string,
 }
 
 func (s *URLStore) AddURLDBLinks(ctx context.Context, short, long string) (string, error) {
-	var code string
-	var isNew bool
-
-	err := s.DBConnection.QueryRowContext(ctx,
-		"WITH upsert AS (INSERT INTO links (short_url, original_url) VALUES ($1, $2) ON CONFLICT (short_url) DO UPDATE SET original_url = EXCLUDED.original_url RETURNING short_url, CASE WHEN NOT EXISTS (SELECT 1 FROM links WHERE short_url = $1) THEN true ELSE false END AS is_new) SELECT is_new FROM upsert",
-		short, long).Scan(&isNew)
+	_, err := s.DBConnection.ExecContext(ctx,
+		"INSERT INTO links (short_url, original_url) VALUES ($1, $2)", short, long)
+	s.listURL[short] = long
 
 	if err != nil {
-		if err == sql.ErrNoRows {
-			Sugar.Error("No rows found")
-			return "", err
-		}
 		Sugar.Error(err)
 		return "", err
 	}
 
-	shortURL := s.adress + code
-
-	if !isNew {
-		return shortURL, NewDublicateError(s.typeStorage, err)
-	}
-
-	return shortURL, nil
+	return s.adress + short, nil
 }
+
+// func (s *URLStore) AddURLDBLinks(ctx context.Context, short, long string) (string, error) {
+// 	var code string
+// 	var isNew bool
+
+// 	err := s.DBConnection.QueryRowContext(ctx,
+// 		"WITH upsert AS (INSERT INTO links (short_url, original_url) VALUES ($1, $2) ON CONFLICT (short_url) DO UPDATE SET original_url = EXCLUDED.original_url RETURNING short_url, CASE WHEN NOT EXISTS (SELECT 1 FROM links WHERE short_url = $1) THEN true ELSE false END AS is_new) SELECT is_new FROM upsert",
+// 		short, long).Scan(&isNew)
+
+// 	if err != nil {
+// 		if err == sql.ErrNoRows {
+// 			Sugar.Error("No rows found")
+// 			return "", err
+// 		}
+// 		Sugar.Error(err)
+// 		return "", err
+// 	}
+
+// 	shortURL := s.adress + code
+
+// 	if !isNew {
+// 		return shortURL, NewDublicateError(s.typeStorage, err)
+// 	}
+
+// 	return shortURL, nil
+// }
 
 func (s *URLStore) InsertBatchURLsIntoDB(ctx context.Context, data []map[string]string) ([]byte, error) {
 	type urlData struct {
