@@ -136,7 +136,7 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	shortURL := internal.MakeShortURL(parsedURL.String())
-
+	w.Header().Set("Content-Type", "application/json")
 	var response string
 	if Store.typeStorage == typeStorageDB {
 		response, err = Store.AddURLDBLinks(context.Background(), shortURL, parsedURL.String())
@@ -186,7 +186,6 @@ func createShortURL(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(response))
 }
 
-// TODO: вынести Store на верхний уровень
 func getURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -234,6 +233,7 @@ func getAPIShorten(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		w.Header().Set("Content-Type", "application/json")
 		shortURL := internal.MakeShortURL(dataURL.URL)
 		shortURL, err = Store.Add(shortURL, dataURL.URL)
 		var dErr *DublicateError
