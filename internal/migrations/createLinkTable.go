@@ -13,6 +13,7 @@ func CreateLinkTable(db *sql.DB) {
 			short_url TEXT NOT NULL,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);	
+		CREATE UNIQUE INDEX short_url_unique ON links (short_url);
 	`)
 
 	//	CREATE UNIQUE INDEX short_url_unique ON links (short_url);
