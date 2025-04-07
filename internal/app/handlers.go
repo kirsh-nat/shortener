@@ -233,20 +233,66 @@ func getAPIShorten(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		//w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "application/json")
 		shortURL := internal.MakeShortURL(dataURL.URL)
-		shortURL, err = Store.Add(shortURL, dataURL.URL)
-		var dErr *DublicateError
-		if errors.As(err, &dErr) {
-			w.WriteHeader(http.StatusConflict)
-			w.Write([]byte(shortURL))
-			return
+		var response string
+		if Store.typeStorage == typeStorageDB {
+			response, err = Store.AddURLDBLinks(context.Background(), shortURL, dataURL.URL)
+			var dErr *DublicateError
+			if errors.As(err, &dErr) {
+				w.WriteHeader(http.StatusConflict)
+				response, _ := json.Marshal(response)
+				w.Write(response)
+				return
 
-		} else if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			Sugar.Error(err)
-			return
+			} else if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(err.Error()))
+				return
+			}
 		}
+		if Store.typeStorage == typeStorageFile {
+			response, err = Store.SaveIntoFile(shortURL, dataURL.URL, AppSettings.FilePath)
+			var dErr *DublicateError
+			if errors.As(err, &dErr) {
+				w.WriteHeader(http.StatusConflict)
+				w.Write([]byte(response))
+				return
+
+			} else if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(err.Error()))
+				Sugar.Info("Can't save info in file", err)
+				return
+			}
+		}
+		if Store.typeStorage == typeStorageMemory {
+			response, err = Store.Add(shortURL, dataURL.URL)
+			var dErr *DublicateError
+			if errors.As(err, &dErr) {
+				w.WriteHeader(http.StatusConflict)
+				w.Write([]byte(response))
+				return
+
+			} else if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(err.Error()))
+				return
+			}
+		}
+
+		//shortURL, err = Store.Add(shortURL, dataURL.URL)
+		// var dErr *DublicateError
+		// if errors.As(err, &dErr) {
+		// 	w.WriteHeader(http.StatusConflict)
+		// 	w.Write([]byte(shortURL))
+		// 	return
+
+		// } else if err != nil {
+		// 	http.Error(w, err.Error(), http.StatusBadRequest)
+		// 	Sugar.Error(err)
+		// 	return
+		// }
 
 		res := make(map[string]string, 1)
 		res["result"] = shortURL

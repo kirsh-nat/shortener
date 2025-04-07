@@ -230,16 +230,18 @@ func (s *URLStore) AddURLDBLinks(ctx context.Context, short, long string) (strin
 
 	s.listURL[short] = long
 
+	shortUrl := strings.TrimSpace(s.adress + short)
+
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
 
-			return s.adress + short, NewDublicateError(s.typeStorage, err)
+			return shortUrl, NewDublicateError(s.typeStorage, err)
 		}
 		Sugar.Error(err)
 		return "", err
 	}
 
-	return s.adress + short, nil
+	return shortUrl, nil
 }
 
 func (s *URLStore) InsertBatchURLsIntoDB(ctx context.Context, data []map[string]string) ([]byte, error) {
