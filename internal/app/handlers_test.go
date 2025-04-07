@@ -46,7 +46,7 @@ func TestCreateShortURL(t *testing.T) {
 		longURL string
 	}{
 		{"/", "http://localhost:8080/7e90a4", http.StatusCreated, http.MethodPost, "https://ya.ru"},
-		{"/", "URL already exists", http.StatusBadRequest, http.MethodPost, "https://ya.ru"},
+		{"/", "http://localhost:8080/7e90a4", http.StatusConflict, http.MethodPost, "https://ya.ru"},
 		{"/", "", http.StatusMethodNotAllowed, http.MethodGet, "https://ya.ru"},
 	}
 	for _, v := range testTable {
@@ -118,7 +118,7 @@ func TestGetURL(t *testing.T) {
 				location: ``,
 			},
 			request: request{
-				id:     "h123456",
+				id:     "h1234567",
 				method: http.MethodGet,
 			},
 		},

@@ -249,7 +249,7 @@ func getAPIShorten(w http.ResponseWriter, r *http.Request) {
 		}
 
 		res := make(map[string]string, 1)
-		res["result"] = "http://" + AppSettings.Resp + "/" + shortURL
+		res["result"] = shortURL
 
 		resp, err := json.Marshal(res)
 		if err != nil {
