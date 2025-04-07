@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/kirsh-nat/shortener.git/internal/config"
 	"github.com/kirsh-nat/shortener.git/internal/migrations"
 	internal "github.com/kirsh-nat/shortener.git/internal/services"
@@ -223,28 +224,22 @@ func (s *URLStore) GetURLFromDBLinks(ctx context.Context, short string) (string,
 }
 
 func (s *URLStore) AddURLDBLinks(ctx context.Context, short, long string) (string, error) {
-	var isNew bool
 
-	err := s.DBConnection.QueryRowContext(ctx,
-		"INSERT INTO links (short_url, original_url) VALUES ($1, $2) ON CONFLICT (short_url) DO UPDATE SET original_url = EXCLUDED.original_url RETURNING CASE WHEN (SELECT COUNT(*) FROM links WHERE short_url = $1) = 0 THEN true ELSE false END AS is_new",
-		short, long).Scan(&isNew)
+	_, err := s.DBConnection.ExecContext(ctx,
+		"INSERT INTO links (short_url, original_url) VALUES ($1, $2)", short, long)
+
+	s.listURL[short] = long
 
 	if err != nil {
-		if err == sql.ErrNoRows {
-			Sugar.Error("No rows found")
-			return "", err
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
+
+			return s.adress + short, NewDublicateError(s.typeStorage, err)
 		}
 		Sugar.Error(err)
 		return "", err
 	}
 
-	shortURL := s.adress + short
-
-	if !isNew {
-		return shortURL, NewDublicateError(s.typeStorage, err)
-	}
-
-	return shortURL, nil
+	return s.adress + short, nil
 }
 
 func (s *URLStore) InsertBatchURLsIntoDB(ctx context.Context, data []map[string]string) ([]byte, error) {
