@@ -34,6 +34,7 @@ type URLStore struct {
 	listURL      map[string]string
 	typeStorage  string
 	adress       string
+	filePath     string
 }
 
 type infoURL struct {
@@ -76,13 +77,12 @@ func NewInfoURL() *infoURL {
 	return &infoURL{}
 }
 
-// TODO: настроуки от  окружения здесь!!!!
-// add typeStorage in struct : memory, file, DB !!!!!
 func NewURLStore(config *config.Config) *URLStore {
 	URLStore := URLStore{
 		listURL:     make(map[string]string),
 		typeStorage: typeStorageMemory,
 		adress:      "http://" + config.Addr + "/",
+		filePath:    config.FilePath,
 	}
 	if config.SetDBConnection != "" {
 		URLStore.DBConnection = SetDBConnection(config.SetDBConnection)
@@ -130,10 +130,24 @@ func NewFileReader(filename string) (*FileReader, error) {
 	}, nil
 }
 
-func (s *URLStore) Add(short, long string) (string, error) {
+func (s *URLStore) Add(shortURL, originalURL string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	switch s.typeStorage {
+	case typeStorageDB:
+		return s.saveIntoDB(context.Background(), shortURL, originalURL)
+	case typeStorageFile:
+		return s.saveIntoFile(shortURL, originalURL)
+	case typeStorageMemory:
+		return s.saveIntoMemory(shortURL, originalURL)
+
+	default:
+		return "", errors.New("unknown storage type")
+	}
+}
+
+func (s *URLStore) saveIntoMemory(short, long string) (string, error) {
 	shortURL := s.adress + short
 	if _, exists := s.listURL[short]; exists {
 		return shortURL, NewDublicateError(s.typeStorage, errors.New(ErrURLExist))
@@ -143,28 +157,13 @@ func (s *URLStore) Add(short, long string) (string, error) {
 	return shortURL, nil
 }
 
-func (s *URLStore) Get(short string) (string, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	long, exists := s.listURL[short]
-
-	if !exists {
-		return "", errors.New(ErrURLNotFound)
-	}
-
-	return long, nil
-}
-
-func (s *URLStore) SaveIntoFile(short, long, fname string) (string, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
+func (s *URLStore) saveIntoFile(short, long string) (string, error) {
 	shortURL := s.adress + short
 	if _, exists := s.listURL[short]; exists {
 		return shortURL, NewDublicateError(s.typeStorage, errors.New(ErrURLExist))
 	}
 
-	file, err := os.OpenFile(fname, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile(s.filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return "", err
 	}
@@ -184,6 +183,27 @@ func (s *URLStore) SaveIntoFile(short, long, fname string) (string, error) {
 		return "", err
 	}
 	s.listURL[short] = long
+
+	return shortURL, nil
+}
+
+func (s *URLStore) saveIntoDB(ctx context.Context, short, long string) (string, error) {
+
+	_, err := s.DBConnection.ExecContext(ctx,
+		"INSERT INTO links (short_url, original_url) VALUES ($1, $2)", short, long)
+
+	s.listURL[short] = long
+
+	shortURL := strings.TrimSpace(s.adress + short)
+
+	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
+
+			return shortURL, NewDublicateError(s.typeStorage, err)
+		}
+		Sugar.Error(err)
+		return "", err
+	}
 
 	return shortURL, nil
 }
@@ -223,25 +243,16 @@ func (s *URLStore) GetURLFromDBLinks(ctx context.Context, short string) (string,
 	return "", errors.New(ErrURLNotFound)
 }
 
-func (s *URLStore) AddURLDBLinks(ctx context.Context, short, long string) (string, error) {
+func (s *URLStore) Get(short string) (string, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	long, exists := s.listURL[short]
 
-	_, err := s.DBConnection.ExecContext(ctx,
-		"INSERT INTO links (short_url, original_url) VALUES ($1, $2)", short, long)
-
-	s.listURL[short] = long
-
-	shortURL := strings.TrimSpace(s.adress + short)
-
-	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
-
-			return shortURL, NewDublicateError(s.typeStorage, err)
-		}
-		Sugar.Error(err)
-		return "", err
+	if !exists {
+		return "", errors.New(ErrURLNotFound)
 	}
 
-	return shortURL, nil
+	return long, nil
 }
 
 func (s *URLStore) InsertBatchURLsIntoDB(ctx context.Context, data []map[string]string) ([]byte, error) {

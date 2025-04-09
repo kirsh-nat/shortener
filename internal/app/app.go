@@ -17,7 +17,6 @@ var (
 
 func SetAppConfig() {
 	setLogger()
-	setLogger()
 	AppSettings = new(config.Config)
 	Sugar.Infow(
 		"Starting server",

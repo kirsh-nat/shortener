@@ -26,6 +26,6 @@ func main() {
 }
 
 func run() error {
-	mux := app.Routes()
+	mux := app.Routes(app.Store)
 	return http.ListenAndServe(app.AppSettings.Addr, mux)
 }
