@@ -285,7 +285,7 @@ func (s *URLStore) InsertBatchURLsIntoDB(ctx context.Context, data []map[string]
 		if err != nil {
 			return nil, err
 		}
-		s.Add(short, original)
+		s.saveIntoMemory(short, original)
 
 		res = append(res, urlData{
 			ID:    code,
