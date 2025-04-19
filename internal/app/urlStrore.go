@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/kirsh-nat/shortener.git/internal/config"
@@ -134,9 +135,12 @@ func (s *URLStore) Add(shortURL, originalURL string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	switch s.typeStorage {
 	case typeStorageDB:
-		return s.saveIntoDB(context.Background(), shortURL, originalURL)
+		return s.saveIntoDB(ctx, shortURL, originalURL)
 	case typeStorageFile:
 		return s.saveIntoFile(shortURL, originalURL)
 	case typeStorageMemory:
@@ -255,7 +259,7 @@ func (s *URLStore) Get(short string) (string, error) {
 	return long, nil
 }
 
-func (s *URLStore) InsertBatchURLsIntoDB(ctx context.Context, data []map[string]string) ([]byte, error) {
+func (s *URLStore) InsertBatchURLsIntoDB(data []map[string]string) ([]byte, error) {
 	type urlData struct {
 		ID    string `json:"correlation_id"`
 		Short string `json:"short_url"`
@@ -268,6 +272,9 @@ func (s *URLStore) InsertBatchURLsIntoDB(ctx context.Context, data []map[string]
 		return nil, err
 	}
 	defer tx.Rollback()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
 	stmt, err := tx.PrepareContext(ctx,
 		"INSERT INTO links (short_url, original_url) VALUES($1, $2)")
@@ -305,7 +312,7 @@ func (s *URLStore) InsertBatchURLsIntoDB(ctx context.Context, data []map[string]
 	return responseJSON, nil
 }
 
-func (s *URLStore) InsertBatchURLsIntoFile(ctx context.Context, data []map[string]string, fname string) ([]byte, error) {
+func (s *URLStore) InsertBatchURLsIntoFile(data []map[string]string, fname string) ([]byte, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -351,14 +358,17 @@ func (s *URLStore) InsertBatchURLsIntoFile(ctx context.Context, data []map[strin
 	return responseJSON, nil
 }
 
-func (s *URLStore) InsertBatchURLsIntoMemory(ctx context.Context, data []map[string]string) ([]byte, error) {
+func (s *URLStore) InsertBatchURLsIntoMemory(data []map[string]string) ([]byte, error) {
 	var res []urlBatchData
 
 	for _, v := range data {
 		code := v["correlation_id"]
 		original := v["original_url"]
 		short := internal.MakeShortURL(original)
-		s.Add(short, original)
+		_, err := s.Add(short, original)
+		if err != nil {
+			return nil, err
+		}
 
 		res = append(res, urlBatchData{
 			ID:    code,

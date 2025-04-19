@@ -268,13 +268,13 @@ func (s *URLStore) createBatchURLs(w http.ResponseWriter, r *http.Request) {
 	var res []byte
 
 	if s.typeStorage == typeStorageDB {
-		res, err = s.InsertBatchURLsIntoDB(context.Background(), dataURL)
+		res, err = s.InsertBatchURLsIntoDB(dataURL)
 	}
 	if s.typeStorage == typeStorageFile {
-		res, err = s.InsertBatchURLsIntoFile(context.Background(), dataURL, AppSettings.FilePath)
+		res, err = s.InsertBatchURLsIntoFile(dataURL, AppSettings.FilePath)
 	}
 	if s.typeStorage == typeStorageMemory {
-		res, err = s.InsertBatchURLsIntoMemory(context.Background(), dataURL)
+		res, err = s.InsertBatchURLsIntoMemory(dataURL)
 	}
 
 	if err != nil {
