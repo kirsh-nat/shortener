@@ -13,7 +13,6 @@ import (
 	"github.com/kirsh-nat/shortener.git/internal/app"
 	"github.com/kirsh-nat/shortener.git/internal/domain"
 	"github.com/kirsh-nat/shortener.git/internal/services"
-	internal "github.com/kirsh-nat/shortener.git/internal/services"
 )
 
 type (
@@ -90,7 +89,7 @@ func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//TODO: передать хост нормально
-	shortURL := internal.MakeShortURL(parsedURL.String())
+	shortURL := services.MakeShortURL(parsedURL.String())
 	w.Header().Set("Content-Type", "application/json")
 	err = h.service.Add(context.Background(), shortURL, parsedURL.String())
 	var dErr *domain.DublicateError
@@ -156,7 +155,7 @@ func (h *URLHandler) GetAPIShorten(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		shortURL := internal.MakeShortURL(dataURL.URL)
+		shortURL := services.MakeShortURL(dataURL.URL)
 		err = h.service.Add(context.Background(), shortURL, dataURL.URL)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)

@@ -4,28 +4,45 @@ import (
 	"net/http"
 
 	"github.com/kirsh-nat/shortener.git/internal/app"
-	"github.com/kirsh-nat/shortener.git/internal/config"
+	"github.com/kirsh-nat/shortener.git/internal/handlers"
+	"github.com/kirsh-nat/shortener.git/internal/models"
+	"github.com/kirsh-nat/shortener.git/internal/repositories"
+	"github.com/kirsh-nat/shortener.git/internal/services"
 )
 
 func main() {
 	app.SetAppConfig()
 
-	config.ParseFlags(app.AppSettings)
-	config.ValidateConfig(app.AppSettings)
-	app.DB = app.SetDBConnection(app.AppSettings.SetDBConnection)
+	app.ParseFlags(app.AppSettings)
+	app.ValidateConfig(app.AppSettings)
+	//app.DB = app.DBConnect(app.AppSettings.SetDBConnection)
 
-	app.Store = app.NewURLStore(app.AppSettings)
+	var repo models.URLRepository
 
-	if err := run(); err != nil {
+	if app.DB != nil {
+		app.DB = app.DBConnect(app.AppSettings.SetDBConnection)
+		repo = repositories.NewDBRepository(app.DB)
+
+	} else if app.AppSettings.FilePath != "" {
+		repo = repositories.NewFileRepository(app.AppSettings.FilePath)
+
+	} else {
+		repo = repositories.NewMemoryRepository()
+
+	}
+	service := services.NewURLService(repo)
+	handler := handlers.NewURLHandler(service)
+
+	if err := run(handler); err != nil {
 		app.Sugar.Fatalw(err.Error(), "event", "start server")
 	}
-	if app.Store.DBConnection != nil {
-		defer app.Store.DBConnection.Close()
+	if app.DB != nil {
+		defer app.DB.Close()
 
 	}
 }
 
-func run() error {
-	mux := app.Routes(app.Store)
+func run(handler *handlers.URLHandler) error {
+	mux := handlers.Routes(handler)
 	return http.ListenAndServe(app.AppSettings.Addr, mux)
 }

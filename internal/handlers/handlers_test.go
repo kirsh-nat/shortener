@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/kirsh-nat/shortener.git/internal/app"
-	"github.com/kirsh-nat/shortener.git/internal/config"
 	"github.com/kirsh-nat/shortener.git/internal/repositories"
 	"github.com/kirsh-nat/shortener.git/internal/services"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +17,7 @@ import (
 
 func init() {
 	app.SetAppConfig()
-	config.ValidateConfig(app.AppSettings)
+	app.ValidateConfig(app.AppSettings)
 
 	//repo := repositories.NewFileRepository(app.AppSettings.FilePath) // Works !!
 	//repo := repositories.NewDBRepository(app.DB) // WORKS!!!!
