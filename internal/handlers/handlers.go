@@ -157,12 +157,9 @@ func (h *URLHandler) GetAPIShorten(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		shortURL := services.MakeShortURL(dataURL.URL)
 		err = h.service.Add(context.Background(), shortURL, dataURL.URL)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
 		var response []byte
 		result := "http://" + app.AppSettings.Addr + "/" + shortURL
+		var dErr *domain.DublicateError
 
 		res := make(map[string]string, 1)
 		res["result"] = result
@@ -174,18 +171,20 @@ func (h *URLHandler) GetAPIShorten(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		var dErr *domain.DublicateError
-		if errors.As(err, &dErr) {
-			w.WriteHeader(http.StatusConflict)
-			w.Write(response)
-			return
-		} else if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			return
+		if err != nil {
+			if errors.As(err, &dErr) {
+				w.WriteHeader(http.StatusConflict)
+				w.Write(response)
+				return
+			} else {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 		}
+
 		w.WriteHeader(http.StatusCreated)
 		w.Write(response)
+
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
