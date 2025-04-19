@@ -16,12 +16,12 @@ func init() {
 	SetAppConfig()
 	config.ValidateConfig(AppSettings)
 	AppSettings.FilePath = "test.txt"
-	Store = NewURLStore(AppSettings.FilePath)
+	Store = NewURLStore(AppSettings)
 }
 
 func testRequest(t *testing.T, ts *httptest.Server, method,
 	path string, body string) (*http.Response, string) {
-	req, err := http.NewRequest(method, ts.URL+path, strings.NewReader(body)) //here
+	req, err := http.NewRequest(method, ts.URL+path, strings.NewReader(body))
 	require.NoError(t, err)
 
 	resp, err := ts.Client().Do(req)
@@ -35,9 +35,8 @@ func testRequest(t *testing.T, ts *httptest.Server, method,
 }
 
 func TestCreateShortURL(t *testing.T) {
-	ts := httptest.NewServer(Routes())
+	ts := httptest.NewServer(Routes(Store))
 	defer ts.Close()
-
 	var testTable = []struct {
 		url     string
 		want    string
@@ -46,7 +45,7 @@ func TestCreateShortURL(t *testing.T) {
 		longURL string
 	}{
 		{"/", "http://localhost:8080/7e90a4", http.StatusCreated, http.MethodPost, "https://ya.ru"},
-		{"/", "URL already exists", http.StatusBadRequest, http.MethodPost, "https://ya.ru"},
+		{"/", "http://localhost:8080/7e90a4", http.StatusConflict, http.MethodPost, "https://ya.ru"},
 		{"/", "", http.StatusMethodNotAllowed, http.MethodGet, "https://ya.ru"},
 	}
 	for _, v := range testTable {
@@ -118,7 +117,7 @@ func TestGetURL(t *testing.T) {
 				location: ``,
 			},
 			request: request{
-				id:     "h123456",
+				id:     "h1234567",
 				method: http.MethodGet,
 			},
 		},
@@ -129,7 +128,7 @@ func TestGetURL(t *testing.T) {
 			req := httptest.NewRequest(test.request.method, "/", nil)
 			req.SetPathValue("id", test.request.id)
 			rr := httptest.NewRecorder()
-			getURL(rr, req)
+			Store.getURL(rr, req)
 
 			if status := rr.Code; status != test.expected.code {
 				t.Errorf("handler returned wrong status code: got %v expected %v",
@@ -158,7 +157,7 @@ func TestAPIShorten(t *testing.T) {
 	for _, v := range testTable {
 		req := httptest.NewRequest(v.method, v.url, strings.NewReader(v.req))
 		resp := httptest.NewRecorder()
-		getAPIShorten(resp, req)
+		Store.getAPIShorten(resp, req)
 		assert.Equal(t, v.status, resp.Code)
 		if v.want == "" {
 			if resp.Body.String() != v.want {

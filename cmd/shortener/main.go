@@ -12,15 +12,20 @@ func main() {
 
 	config.ParseFlags(app.AppSettings)
 	config.ValidateConfig(app.AppSettings)
+	app.DB = app.SetDBConnection(app.AppSettings.SetDBConnection)
 
-	app.Store = app.NewURLStore(app.AppSettings.FilePath)
+	app.Store = app.NewURLStore(app.AppSettings)
 
 	if err := run(); err != nil {
 		app.Sugar.Fatalw(err.Error(), "event", "start server")
 	}
+	if app.Store.DBConnection != nil {
+		defer app.Store.DBConnection.Close()
+
+	}
 }
 
 func run() error {
-	mux := app.Routes()
+	mux := app.Routes(app.Store)
 	return http.ListenAndServe(app.AppSettings.Addr, mux)
 }
