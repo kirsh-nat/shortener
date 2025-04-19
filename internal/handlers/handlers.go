@@ -1,4 +1,4 @@
-package app
+package handlers
 
 import (
 	"bytes"
@@ -9,9 +9,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
-	"time"
 
+	"github.com/kirsh-nat/shortener.git/internal/app"
+	"github.com/kirsh-nat/shortener.git/internal/domain"
+	"github.com/kirsh-nat/shortener.git/internal/services"
 	internal "github.com/kirsh-nat/shortener.git/internal/services"
 )
 
@@ -47,57 +48,15 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.responseData.status = statusCode
 }
 
-func Middleware(h http.Handler) http.HandlerFunc {
-	logFn := func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		uri := r.RequestURI
-		method := r.Method
-
-		responseData := &responseData{
-			status: 0,
-			size:   0,
-		}
-		lw := loggingResponseWriter{
-			ResponseWriter: w,
-			responseData:   responseData,
-		}
-
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-			h.ServeHTTP(&lw, r)
-			return
-		}
-
-		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
-		if err != nil {
-			io.WriteString(w, err.Error())
-			return
-		}
-		defer gz.Close()
-
-		w.Header().Set("Content-Encoding", "gzip")
-
-		h.ServeHTTP(gzipWriter{ResponseWriter: &lw, Writer: gz}, r)
-
-		duration := time.Since(start)
-
-		Sugar.Infoln(
-			"type:", "request",
-			"uri:", AppSettings.Addr+uri,
-			"method:", method,
-			"duration:", duration,
-		)
-
-		Sugar.Infoln(
-			"type:", "response",
-			"status:", responseData.status,
-			"size:", responseData.size,
-		)
-	}
-
-	return logFn
+type URLHandler struct {
+	service services.URLService
 }
 
-func (s *URLStore) createShortURL(w http.ResponseWriter, r *http.Request) {
+func NewURLHandler(service *services.URLService) *URLHandler {
+	return &URLHandler{service: *service}
+}
+
+func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Write([]byte("Method not allowed"))
@@ -130,11 +89,14 @@ func (s *URLStore) createShortURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//TODO: передать хост нормально
 	shortURL := internal.MakeShortURL(parsedURL.String())
 	w.Header().Set("Content-Type", "application/json")
-	response, err := s.Add(shortURL, parsedURL.String())
-	var dErr *DublicateError
+	err = h.service.Add(context.Background(), shortURL, parsedURL.String())
+	var dErr *domain.DublicateError
+	var response string
 	if errors.As(err, &dErr) {
+		response = "http://" + app.AppSettings.Addr + "/" + shortURL
 		w.WriteHeader(http.StatusConflict)
 		w.Write([]byte(response))
 		return
@@ -144,12 +106,15 @@ func (s *URLStore) createShortURL(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
+	if response == "" {
+		response = "http://" + app.AppSettings.Addr + "/" + shortURL
+	}
 
 	w.WriteHeader(http.StatusCreated)
 	_, _ = w.Write([]byte(response))
 }
 
-func (s *URLStore) getURL(w http.ResponseWriter, r *http.Request) {
+func (h *URLHandler) Get(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Write([]byte("Post method not allowed"))
@@ -161,11 +126,7 @@ func (s *URLStore) getURL(w http.ResponseWriter, r *http.Request) {
 	var redirectURL string
 	var err error
 
-	if s.typeStorage == typeStorageDB {
-		redirectURL, err = s.GetURLFromDBLinks(context.Background(), short)
-	} else {
-		redirectURL, err = s.Get(short)
-	}
+	redirectURL, err = h.service.Get(context.Background(), short)
 
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
@@ -177,7 +138,7 @@ func (s *URLStore) getURL(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-func (s *URLStore) getAPIShorten(w http.ResponseWriter, r *http.Request) {
+func (h *URLHandler) GetAPIShorten(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		var dataURL struct {
 			URL string `json:"url"`
@@ -187,33 +148,34 @@ func (s *URLStore) getAPIShorten(w http.ResponseWriter, r *http.Request) {
 		_, err := buf.ReadFrom(r.Body)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
-			Sugar.Error(err)
 			return
 		}
 		if err = json.Unmarshal(buf.Bytes(), &dataURL); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
-			Sugar.Error(err)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		shortURL := internal.MakeShortURL(dataURL.URL)
-		result, err := s.Add(shortURL, dataURL.URL)
+		err = h.service.Add(context.Background(), shortURL, dataURL.URL)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		var response []byte
-		if result != "" {
-			res := make(map[string]string, 1)
-			res["result"] = result
+		result := "http://" + app.AppSettings.Addr + "/" + shortURL
 
-			var jsonErr error
-			response, jsonErr = json.Marshal(res)
-			if jsonErr != nil {
-				http.Error(w, jsonErr.Error(), http.StatusInternalServerError)
-				Sugar.Error(jsonErr)
-				return
-			}
+		res := make(map[string]string, 1)
+		res["result"] = result
+
+		var jsonErr error
+		response, jsonErr = json.Marshal(res)
+		if jsonErr != nil {
+			http.Error(w, jsonErr.Error(), http.StatusInternalServerError)
+			return
 		}
 
-		var dErr *DublicateError
+		var dErr *domain.DublicateError
 		if errors.As(err, &dErr) {
 			w.WriteHeader(http.StatusConflict)
 			w.Write(response)
@@ -226,16 +188,15 @@ func (s *URLStore) getAPIShorten(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 		w.Write(response)
 	} else {
-		Sugar.Infoln("request error method: %v not allowed", r.Method)
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
+
 }
 
-func pingHandler(w http.ResponseWriter, r *http.Request) {
-	if err := DB.Ping(); err != nil {
+func (h *URLHandler) PingHandler(w http.ResponseWriter, r *http.Request) {
+	if err := h.service.Ping(); err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		Sugar.Error("Database connection error:", err)
 		return
 	}
 
@@ -243,7 +204,7 @@ func pingHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-func (s *URLStore) createBatchURLs(w http.ResponseWriter, r *http.Request) {
+func (h *URLHandler) AddBatch(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Write([]byte("Method not allowed"))
@@ -256,30 +217,19 @@ func (s *URLStore) createBatchURLs(w http.ResponseWriter, r *http.Request) {
 	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		Sugar.Error(err)
 		return
 	}
 	if err = json.Unmarshal(buf.Bytes(), &dataURL); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		Sugar.Error(err)
 		return
 	}
 
 	var res []byte
 
-	if s.typeStorage == typeStorageDB {
-		res, err = s.InsertBatchURLsIntoDB(dataURL)
-	}
-	if s.typeStorage == typeStorageFile {
-		res, err = s.InsertBatchURLsIntoFile(dataURL, AppSettings.FilePath)
-	}
-	if s.typeStorage == typeStorageMemory {
-		res, err = s.InsertBatchURLsIntoMemory(dataURL)
-	}
+	res, err = h.service.AddBatch(dataURL)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		Sugar.Error(err)
 		return
 	}
 

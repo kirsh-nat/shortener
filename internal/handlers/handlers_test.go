@@ -1,26 +1,31 @@
-package app
+package handlers
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/kirsh-nat/shortener.git/internal/app"
 	"github.com/kirsh-nat/shortener.git/internal/config"
+	"github.com/kirsh-nat/shortener.git/internal/repositories"
+	"github.com/kirsh-nat/shortener.git/internal/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func init() {
-	SetAppConfig()
-	config.ValidateConfig(AppSettings)
-	AppSettings.FilePath = "test.txt"
-	Store = NewURLStore(AppSettings)
+	app.SetAppConfig()
+	config.ValidateConfig(app.AppSettings)
+
+	//repo := repositories.NewFileRepository(app.AppSettings.FilePath) // Works !!
+	//repo := repositories.NewDBRepository(app.DB) // WORKS!!!!
+	// service := services.NewURLService(repo)
 }
 
-func testRequest(t *testing.T, ts *httptest.Server, method,
-	path string, body string) (*http.Response, string) {
+func testRequest(t *testing.T, ts *httptest.Server, method, path string, body string) (*http.Response, string) {
 	req, err := http.NewRequest(method, ts.URL+path, strings.NewReader(body))
 	require.NoError(t, err)
 
@@ -34,8 +39,26 @@ func testRequest(t *testing.T, ts *httptest.Server, method,
 	return resp, string(respBody)
 }
 
+func TestPingHandler(t *testing.T) {
+	repo := repositories.NewFileRepository(app.AppSettings.FilePath) // Works !!
+	service := services.NewURLService(repo)
+	handler := NewURLHandler(service)
+
+	ts := httptest.NewServer(Routes(handler))
+	defer ts.Close()
+
+	resp, body := testRequest(t, ts, http.MethodGet, "/ping", "")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "OK", body)
+}
+
 func TestCreateShortURL(t *testing.T) {
-	ts := httptest.NewServer(Routes(Store))
+	repo := repositories.NewMemoryRepository()
+	service := services.NewURLService(repo)
+	handler := NewURLHandler(service)
+
+	ts := httptest.NewServer(Routes(handler))
+
 	defer ts.Close()
 	var testTable = []struct {
 		url     string
@@ -69,10 +92,15 @@ func TestCreateShortURL(t *testing.T) {
 }
 
 func TestGetURL(t *testing.T) {
+
+	repo := repositories.NewMemoryRepository()
+	service := services.NewURLService(repo)
+	handler := NewURLHandler(service)
+
 	testID := "SVHZQO"
-	_, err := Store.Get(testID)
+	_, err := handler.service.Get(context.Background(), testID)
 	if err != nil {
-		Store.Add(testID, "https://yandex.ru/")
+		handler.service.Add(context.Background(), testID, "https://yandex.ru/")
 	}
 
 	type expected struct {
@@ -128,7 +156,7 @@ func TestGetURL(t *testing.T) {
 			req := httptest.NewRequest(test.request.method, "/", nil)
 			req.SetPathValue("id", test.request.id)
 			rr := httptest.NewRecorder()
-			Store.getURL(rr, req)
+			handler.Get(rr, req)
 
 			if status := rr.Code; status != test.expected.code {
 				t.Errorf("handler returned wrong status code: got %v expected %v",
@@ -144,6 +172,10 @@ func TestGetURL(t *testing.T) {
 }
 
 func TestAPIShorten(t *testing.T) {
+	repo := repositories.NewMemoryRepository()
+	service := services.NewURLService(repo)
+	handler := NewURLHandler(service)
+
 	var testTable = []struct {
 		url    string
 		want   string
@@ -157,7 +189,8 @@ func TestAPIShorten(t *testing.T) {
 	for _, v := range testTable {
 		req := httptest.NewRequest(v.method, v.url, strings.NewReader(v.req))
 		resp := httptest.NewRecorder()
-		Store.getAPIShorten(resp, req)
+
+		handler.GetAPIShorten(resp, req)
 		assert.Equal(t, v.status, resp.Code)
 		if v.want == "" {
 			if resp.Body.String() != v.want {
