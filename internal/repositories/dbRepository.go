@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/kirsh-nat/shortener.git/internal/domain"
+	"github.com/kirsh-nat/shortener.git/internal/migrations"
 	"github.com/kirsh-nat/shortener.git/internal/models"
 	"github.com/kirsh-nat/shortener.git/internal/services"
 )
@@ -17,15 +18,15 @@ type DBRepository struct {
 }
 
 func NewDBRepository(db *sql.DB) models.URLRepository {
+	migrations.CreateLinkTable(db)
 	return &DBRepository{db: db}
 }
 
-// TODO: нужен ли контекст сюда?
-//
-// в случае дубликата должен возвращать существующую урлу !!!
 func (r *DBRepository) Add(shortURL, originalURL string) error {
-	// Логика добавления в базу данных...
-	_, err := r.db.ExecContext(context.Background(), //todo: change!!! veru ==y importnat
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_, err := r.db.ExecContext(ctx,
 		"INSERT INTO links (short_url, original_url) VALUES ($1, $2)", shortURL, originalURL)
 
 	if err != nil {
