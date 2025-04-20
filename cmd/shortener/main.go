@@ -19,7 +19,7 @@ func main() {
 
 	var repo models.URLRepository
 
-	if app.DB != nil {
+	if app.AppSettings.SetDBConnection != "" {
 		app.DB = app.DBConnect(app.AppSettings.SetDBConnection)
 		repo = repositories.NewDBRepository(app.DB)
 
