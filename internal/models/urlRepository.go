@@ -4,5 +4,5 @@ type URLRepository interface {
 	Add(shortURL, originalURL string) error
 	Get(short string) (string, error)
 	Ping() error
-	AddBatch(data []map[string]string) ([]byte, error)
+	AddBatch(host string, data []map[string]string) ([]byte, error)
 }

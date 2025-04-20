@@ -38,7 +38,7 @@ func (r *MemoryRepository) Ping() error {
 	return nil
 }
 
-func (r *MemoryRepository) AddBatch(data []map[string]string) ([]byte, error) {
+func (r *MemoryRepository) AddBatch(host string, data []map[string]string) ([]byte, error) {
 	type urlData struct {
 		ID    string `json:"correlation_id"`
 		Short string `json:"short_url"`
@@ -58,7 +58,7 @@ func (r *MemoryRepository) AddBatch(data []map[string]string) ([]byte, error) {
 
 		res = append(res, urlData{
 			ID:    code,
-			Short: short,
+			Short: "http://" + host + "/" + short,
 		})
 	}
 

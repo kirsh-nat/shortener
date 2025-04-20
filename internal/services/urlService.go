@@ -38,6 +38,6 @@ func (s *URLService) Ping() error {
 	return s.repo.Ping()
 }
 
-func (s *URLService) AddBatch(data []map[string]string) ([]byte, error) {
-	return s.repo.AddBatch(data)
+func (s *URLService) AddBatch(host string, data []map[string]string) ([]byte, error) {
+	return s.repo.AddBatch(host, data)
 }

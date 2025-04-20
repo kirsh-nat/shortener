@@ -64,7 +64,7 @@ func (r *DBRepository) Ping() error {
 	return nil
 }
 
-func (r *DBRepository) AddBatch(data []map[string]string) ([]byte, error) {
+func (r *DBRepository) AddBatch(host string, data []map[string]string) ([]byte, error) {
 	type urlData struct {
 		ID    string `json:"correlation_id"`
 		Short string `json:"short_url"`
@@ -100,7 +100,7 @@ func (r *DBRepository) AddBatch(data []map[string]string) ([]byte, error) {
 
 		res = append(res, urlData{
 			ID:    code,
-			Short: short,
+			Short: "http://" + host + "/" + short,
 		})
 	}
 
