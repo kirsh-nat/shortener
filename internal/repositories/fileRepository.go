@@ -31,23 +31,33 @@ func NewFileRepository(filePath string) models.URLRepository {
 }
 
 func (r *FileRepository) Add(shortURL, originalURL string) error {
-	file, err := os.OpenFile(r.filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile(r.filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	m := make(map[string]string)
-	m[shortURL] = originalURL
+	data := make(map[string]string)
+	if err := r.loadData(file, &data); err != nil {
+		return err
+	}
 
-	data, err := json.MarshalIndent(m, "", "   ")
+	data[shortURL] = originalURL
+
+	if err := file.Truncate(0); err != nil {
+		return err
+	}
+	if _, err := file.Seek(0, 0); err != nil {
+		return err
+	}
+
+	newData, err := json.MarshalIndent(data, "", "   ")
 	if err != nil {
 		return err
 	}
-	data = append(data, '\n')
+	newData = append(newData, '\n')
 
-	_, err = file.Write(data)
-	if err != nil {
+	if _, err := file.Write(newData); err != nil {
 		return err
 	}
 
@@ -55,24 +65,38 @@ func (r *FileRepository) Add(shortURL, originalURL string) error {
 }
 
 func (r *FileRepository) Get(short string) (string, error) {
-	reader, err := newFileReader(r.filePath)
+	file, err := os.Open(r.filePath)
 	if err != nil {
 		return "", err
 	}
-	defer reader.file.Close()
+	defer file.Close()
 
-	res := make(map[string]string)
-	err = reader.readFile(&res)
-	if err != nil {
+	data := make(map[string]string)
+	if err := r.loadData(file, &data); err != nil {
 		return "", err
 	}
 
-	if val, ok := res[short]; ok {
+	if val, ok := data[short]; ok {
 		return val, nil
 	}
 
 	return "", domain.ErrorURLNotFound
 }
+
+func (r *FileRepository) loadData(file *os.File, data *map[string]string) error {
+	file.Seek(0, 0)
+
+	var temp map[string]string
+	if err := json.NewDecoder(file).Decode(&temp); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	for k, v := range temp {
+		(*data)[k] = v
+	}
+	return nil
+}
+
 func (r *FileRepository) Ping() error {
 	return nil
 }
