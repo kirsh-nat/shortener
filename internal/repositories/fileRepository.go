@@ -44,7 +44,12 @@ func (r *FileRepository) Add(shortURL, originalURL string) error {
 
 	data[shortURL] = originalURL
 
-	file.Seek(0, 0)
+	tempFilePath := r.filePath + ".tmp"
+	tempFile, err := os.Create(tempFilePath)
+	if err != nil {
+		return err
+	}
+	defer tempFile.Close()
 
 	newData, err := json.MarshalIndent(data, "", "   ")
 	if err != nil {
@@ -52,7 +57,15 @@ func (r *FileRepository) Add(shortURL, originalURL string) error {
 	}
 	newData = append(newData, '\n')
 
-	if _, err := file.Write(newData); err != nil {
+	if _, err := tempFile.Write(newData); err != nil {
+		return err
+	}
+
+	if err := tempFile.Close(); err != nil {
+		return err
+	}
+
+	if err := os.Rename(tempFilePath, r.filePath); err != nil {
 		return err
 	}
 
@@ -83,12 +96,16 @@ func (r *FileRepository) loadData(file *os.File, data *map[string]string) error 
 
 	var temp map[string]string
 	if err := json.NewDecoder(file).Decode(&temp); err != nil && !os.IsNotExist(err) {
-		return err
+		if err != io.EOF {
+			return err
+		}
+		//	return err
 	}
 
 	for k, v := range temp {
 		(*data)[k] = v
 	}
+
 	return nil
 }
 
