@@ -31,7 +31,7 @@ func NewFileRepository(filePath string) models.URLRepository {
 }
 
 func (r *FileRepository) Add(shortURL, originalURL string) error {
-	file, err := os.OpenFile(r.filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile(r.filePath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		return err
 	}
@@ -44,12 +44,7 @@ func (r *FileRepository) Add(shortURL, originalURL string) error {
 
 	data[shortURL] = originalURL
 
-	if err := file.Truncate(0); err != nil {
-		return err
-	}
-	if _, err := file.Seek(0, 0); err != nil {
-		return err
-	}
+	file.Seek(0, 0)
 
 	newData, err := json.MarshalIndent(data, "", "   ")
 	if err != nil {
