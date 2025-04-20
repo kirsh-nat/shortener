@@ -47,6 +47,7 @@ func TestPingHandler(t *testing.T) {
 	defer ts.Close()
 
 	resp, body := testRequest(t, ts, http.MethodGet, "/ping", "")
+	resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "OK", body)
 }
