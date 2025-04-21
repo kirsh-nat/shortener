@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"io"
 	"os"
@@ -30,7 +31,7 @@ func NewFileRepository(filePath string) models.URLRepository {
 	return &FileRepository{filePath: filePath}
 }
 
-func (r *FileRepository) Add(shortURL, originalURL string) error {
+func (r *FileRepository) Add(ctx context.Context, shortURL, originalURL string) error {
 	file, err := os.OpenFile(r.filePath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		return err

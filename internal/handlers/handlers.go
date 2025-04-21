@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/kirsh-nat/shortener.git/internal/app"
 	"github.com/kirsh-nat/shortener.git/internal/domain"
@@ -88,10 +89,12 @@ func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//TODO: передать хост нормально
 	shortURL := services.MakeShortURL(parsedURL.String())
-	w.Header().Set("Content-Type", "application/json")
-	err = h.service.Add(context.Background(), shortURL, parsedURL.String())
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	err = h.service.Add(ctx, shortURL, parsedURL.String())
 	var dErr *domain.DublicateError
 	var response string
 	if errors.As(err, &dErr) {
@@ -108,7 +111,7 @@ func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
 	if response == "" {
 		response = "http://" + app.AppSettings.Addr + "/" + shortURL
 	}
-
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	_, _ = w.Write([]byte(response))
 }

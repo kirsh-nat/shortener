@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/kirsh-nat/shortener.git/internal/domain"
@@ -16,7 +17,7 @@ func NewMemoryRepository() models.URLRepository {
 	return &MemoryRepository{store: make(map[string]string)}
 }
 
-func (r *MemoryRepository) Add(shortURL, originalURL string) error {
+func (r *MemoryRepository) Add(ctx context.Context, shortURL, originalURL string) error {
 	if _, ok := r.store[shortURL]; ok {
 		return domain.NewDublicateError("Memory dublicate error", nil)
 	}
@@ -51,7 +52,7 @@ func (r *MemoryRepository) AddBatch(host string, data []map[string]string) ([]by
 		original := v["original_url"]
 		short := services.MakeShortURL(original)
 
-		err := r.Add(short, original)
+		err := r.Add(context.Background(), short, original)
 		if err != nil {
 			return nil, err
 		}

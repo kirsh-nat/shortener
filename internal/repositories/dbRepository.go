@@ -22,10 +22,7 @@ func NewDBRepository(db *sql.DB) models.URLRepository {
 	return &DBRepository{db: db}
 }
 
-func (r *DBRepository) Add(shortURL, originalURL string) error {
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+func (r *DBRepository) Add(ctx context.Context, shortURL, originalURL string) error {
 	_, err := r.db.ExecContext(ctx,
 		"INSERT INTO links (short_url, original_url) VALUES ($1, $2)", shortURL, originalURL)
 
