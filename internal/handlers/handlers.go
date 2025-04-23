@@ -291,8 +291,8 @@ func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 	shortUrls := h.service.GetUserURLs(user.UUID)
 
 	type response struct {
-		Short    string `json:"short_url"`
-		Original string `json:"original_url"`
+		Short    string `json:"ShortURL"`
+		Original string `json:"OriginalURL"`
 	}
 	var res []response
 
@@ -303,12 +303,13 @@ func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 		}
 		res = append(res, response{Short: v, Original: original})
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+
 	if len(res) == 0 {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-
 	resp, jsonErr := json.Marshal(res)
 	if jsonErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
