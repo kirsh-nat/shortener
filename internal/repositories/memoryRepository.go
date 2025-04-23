@@ -17,7 +17,7 @@ func NewMemoryRepository() models.URLRepository {
 	return &MemoryRepository{store: make(map[string]string)}
 }
 
-func (r *MemoryRepository) Add(ctx context.Context, shortURL, originalURL string) error {
+func (r *MemoryRepository) Add(ctx context.Context, shortURL, originalURL, userID string) error {
 	if _, ok := r.store[shortURL]; ok {
 		return domain.NewDublicateError("Memory dublicate error", nil)
 	}
@@ -52,7 +52,8 @@ func (r *MemoryRepository) AddBatch(host string, data []map[string]string) ([]by
 		original := v["original_url"]
 		short := services.MakeShortURL(original)
 
-		err := r.Add(context.Background(), short, original)
+		//TODO: add userID RIGHT here
+		err := r.Add(context.Background(), short, original, "")
 		if err != nil {
 			return nil, err
 		}
@@ -69,4 +70,7 @@ func (r *MemoryRepository) AddBatch(host string, data []map[string]string) ([]by
 	}
 
 	return responseJSON, nil
+}
+
+func (r *MemoryRepository) DeleteBatch(data []string, userID string) {
 }

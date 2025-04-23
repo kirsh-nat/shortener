@@ -9,10 +9,6 @@ import (
 var (
 	errorExistURL    = errors.New("URL already exists")
 	ErrorURLNotFound = errors.New("URL not found")
-
-//	errorURL    = errors.New("URL not found")
-
-// errorUnknownStorage = errors.New("unknown storage type")
 )
 
 type DublicateError struct {

@@ -11,7 +11,9 @@ func CreateLinkTable(db *sql.DB) {
 			id SERIAL PRIMARY KEY,
 			original_url TEXT NOT NULL,
 			short_url TEXT NOT NULL,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			user_id TEXT DEFAULT NULL,
+			deleted BOOLEAN DEFAULT FALSE
 		);	
 		CREATE UNIQUE INDEX IF NOT EXISTS short_url_unique ON links (short_url);
 	`)

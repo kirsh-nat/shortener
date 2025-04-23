@@ -15,8 +15,8 @@ func NewURLService(repo models.URLRepository) *URLService {
 	return &URLService{repo: repo, userURLs: make(map[string][]string)}
 }
 
-func (s *URLService) Add(ctx context.Context, shortURL, originalURL string) error {
-	err := s.repo.Add(ctx, shortURL, originalURL)
+func (s *URLService) Add(ctx context.Context, shortURL, originalURL, userID string) error {
+	err := s.repo.Add(ctx, shortURL, originalURL, userID)
 	if err != nil {
 		return err
 	}
@@ -37,6 +37,10 @@ func (s *URLService) Ping() error {
 
 func (s *URLService) AddBatch(host string, data []map[string]string) ([]byte, error) {
 	return s.repo.AddBatch(host, data)
+}
+
+func (s *URLService) DeleteBatch(shortURLs []string, userID string) {
+	s.repo.DeleteBatch(shortURLs, userID)
 }
 
 func (s *URLService) AddUserURL(userID, short string) {

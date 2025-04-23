@@ -31,7 +31,7 @@ func NewFileRepository(filePath string) models.URLRepository {
 	return &FileRepository{filePath: filePath}
 }
 
-func (r *FileRepository) Add(ctx context.Context, shortURL, originalURL string) error {
+func (r *FileRepository) Add(ctx context.Context, shortURL, originalURL, userID string) error {
 	file, err := os.OpenFile(r.filePath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		return err
@@ -154,6 +154,9 @@ func (r *FileRepository) AddBatch(host string, data []map[string]string) ([]byte
 	}
 
 	return responseJSON, nil
+}
+
+func (r *FileRepository) DeleteBatch(data []string, userID string) {
 }
 
 func (r FileReader) readFile(res *map[string]string) error {

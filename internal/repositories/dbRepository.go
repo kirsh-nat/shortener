@@ -4,9 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/kirsh-nat/shortener.git/internal/app"
 	"github.com/kirsh-nat/shortener.git/internal/domain"
 	"github.com/kirsh-nat/shortener.git/internal/migrations"
 	"github.com/kirsh-nat/shortener.git/internal/models"
@@ -22,9 +25,9 @@ func NewDBRepository(db *sql.DB) models.URLRepository {
 	return &DBRepository{db: db}
 }
 
-func (r *DBRepository) Add(ctx context.Context, shortURL, originalURL string) error {
+func (r *DBRepository) Add(ctx context.Context, shortURL, originalURL, userID string) error {
 	_, err := r.db.ExecContext(ctx,
-		"INSERT INTO links (short_url, original_url) VALUES ($1, $2)", shortURL, originalURL)
+		"INSERT INTO links (short_url, original_url, user_id, deleted) VALUES ($1, $2, $3, $4)", shortURL, originalURL, userID, false)
 
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
@@ -111,4 +114,66 @@ func (r *DBRepository) AddBatch(host string, data []map[string]string) ([]byte, 
 	}
 
 	return responseJSON, nil
+}
+
+func (r *DBRepository) DeleteBatch(shortURLs []string, userID string) {
+	const batchSize = 5
+	var wg sync.WaitGroup
+	errChan := make(chan error, len(shortURLs))
+	urlChan := make(chan string)
+
+	go func() {
+		for err := range errChan {
+			if err != nil {
+				app.Sugar.Info("Error:", err)
+			}
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for url := range urlChan {
+			if err := r.updateDeletedStatus(url, userID); err != nil {
+				errChan <- err
+			}
+		}
+	}()
+
+	for i := 0; i < len(shortURLs); i += batchSize {
+		end := i + batchSize
+		if end > len(shortURLs) {
+			end = len(shortURLs)
+		}
+
+		batch := shortURLs[i:end]
+
+		for _, url := range batch {
+			urlChan <- url
+		}
+
+	}
+
+	close(urlChan)
+	wg.Wait()
+	close(errChan)
+}
+
+func (r *DBRepository) updateDeletedStatus(shortURL, userID string) error {
+	ctx := context.Background()
+	result, err := r.db.ExecContext(ctx,
+		"UPDATE links SET deleted = $1 WHERE short_url = $2 AND user_id = $3", true, shortURL, userID)
+
+	fmt.Println("Updatedn", shortURL, userID)
+
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("no rows updated for URL: %s", shortURL)
+	}
+
+	return nil
 }

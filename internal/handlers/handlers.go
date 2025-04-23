@@ -103,7 +103,7 @@ func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 
-	err = h.service.Add(ctx, shortURL, parsedURL.String())
+	err = h.service.Add(ctx, shortURL, parsedURL.String(), user.UUID)
 	var dErr *domain.DublicateError
 	var response string
 	if errors.As(err, &dErr) {
@@ -167,10 +167,16 @@ func (h *URLHandler) GetAPIShorten(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		user, err := getUserFromCookie(r, w)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
 
 		w.Header().Set("Content-Type", "application/json")
 		shortURL := services.MakeShortURL(dataURL.URL)
-		err = h.service.Add(context.Background(), shortURL, dataURL.URL)
+		err = h.service.Add(r.Context(), shortURL, dataURL.URL, user.UUID)
 		var response []byte
 		result := "http://" + app.AppSettings.Addr + "/" + shortURL
 		var dErr *domain.DublicateError
@@ -275,6 +281,7 @@ func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 	for _, v := range shortUrls {
 		original, err := h.service.Get(context.Background(), v)
 		if err != nil {
+			app.Sugar.Errorw(err.Error(), "event", err)
 			continue
 		}
 		res = append(res, response{Short: v, Original: original})
@@ -293,6 +300,38 @@ func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
+}
+
+func (h *URLHandler) DeleteUserURLs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Write([]byte("Method not allowed"))
+		return
+	}
+
+	user, err := getUserFromCookie(r, w)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	var dataURL []string
+	var buf bytes.Buffer
+	_, err = buf.ReadFrom(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err = json.Unmarshal(buf.Bytes(), &dataURL); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	go h.service.DeleteBatch(dataURL, user.UUID)
+
+	w.WriteHeader(http.StatusAccepted)
+	w.Write([]byte("OK"))
 }
 
 func getUserFromCookie(r *http.Request, w http.ResponseWriter) (*models.User, error) {
