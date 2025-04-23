@@ -142,9 +142,15 @@ func (h *URLHandler) Get(w http.ResponseWriter, r *http.Request) {
 	redirectURL, err = h.service.Get(context.Background(), short)
 
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(err.Error()))
-		return
+		if err.Error() == "url deleted" {
+			w.WriteHeader(http.StatusGone)
+			w.Write([]byte(redirectURL))
+			return
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(err.Error()))
+			return
+		}
 	}
 
 	w.Header().Set("Location", redirectURL)
@@ -279,7 +285,7 @@ func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 	var res []response
 
 	for _, v := range shortUrls {
-		original, err := h.service.Get(context.Background(), v)
+		original, err := h.service.Get(r.Context(), v)
 		if err != nil {
 			app.Sugar.Errorw(err.Error(), "event", err)
 			continue
