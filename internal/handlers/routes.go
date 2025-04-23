@@ -18,6 +18,7 @@ func Routes(handler *URLHandler) *chi.Mux {
 	r.Post("/api/shorten", http.HandlerFunc(Middleware(http.HandlerFunc(handler.GetAPIShorten))))
 	r.Get("/ping", http.HandlerFunc(Middleware(http.HandlerFunc(handler.PingHandler))))
 	r.Post("/api/shorten/batch", http.HandlerFunc(Middleware(http.HandlerFunc(handler.AddBatch))))
+	r.Get("/api/user/urls", http.HandlerFunc(Middleware(http.HandlerFunc(handler.GetUserURLs))))
 
 	return r
 }

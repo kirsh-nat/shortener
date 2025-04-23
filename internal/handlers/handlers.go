@@ -13,6 +13,7 @@ import (
 
 	"github.com/kirsh-nat/shortener.git/internal/app"
 	"github.com/kirsh-nat/shortener.git/internal/domain"
+	"github.com/kirsh-nat/shortener.git/internal/models"
 	"github.com/kirsh-nat/shortener.git/internal/services"
 )
 
@@ -63,6 +64,30 @@ func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var user models.User
+	cookieToken, err := r.Cookie("token")
+	if err != nil || cookieToken.Value == "" {
+		uuid := models.GenerateUUID()
+		user, err := models.CreateUser(uuid)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		http.SetCookie(w, &http.Cookie{
+			Name:  "token",
+			Value: user.Token,
+		})
+	} else {
+		user, err = models.GetUser(cookieToken.Value)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+	}
+
 	var body io.Reader = r.Body
 	if r.Header.Get("Content-Encoding") == "gzip" {
 		gz, err := gzip.NewReader(r.Body)
@@ -111,6 +136,8 @@ func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
 	if response == "" {
 		response = "http://" + app.AppSettings.Addr + "/" + shortURL
 	}
+
+	h.service.AddUserURL(user.UUID, shortURL)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	_, _ = w.Write([]byte(response))
@@ -237,4 +264,56 @@ func (h *URLHandler) AddBatch(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(res)
+}
+
+func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Write([]byte("Method not allowed"))
+		return
+	}
+
+	var user models.User
+	cookieToken, err := r.Cookie("token")
+	if err != nil || cookieToken.Value == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Autentification error"))
+		return
+	} else {
+		user, err = models.GetUser(cookieToken.Value)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(err.Error()))
+			return
+		}
+	}
+
+	shortUrls := h.service.GetUserURLs(user.UUID)
+
+	type response struct {
+		Short    string `json:"short_url"`
+		Original string `json:"original_url"`
+	}
+	var res []response
+
+	for _, v := range shortUrls {
+		original, err := h.service.Get(context.Background(), v)
+		if err != nil {
+			continue
+		}
+		res = append(res, response{Short: v, Original: original})
+	}
+	if len(res) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+
+	resp, jsonErr := json.Marshal(res)
+	if jsonErr != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(resp)
 }
