@@ -63,29 +63,13 @@ func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Method not allowed"))
 		return
 	}
+	var user *models.User
 
-	var user models.User
-	cookieToken, err := r.Cookie("token")
-	if err != nil || cookieToken.Value == "" {
-		uuid := models.GenerateUUID()
-		user, err := models.CreateUser(uuid)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
-			return
-		}
-
-		http.SetCookie(w, &http.Cookie{
-			Name:  "token",
-			Value: user.Token,
-		})
-	} else {
-		user, err = models.GetUser(cookieToken.Value)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
-			return
-		}
+	user, err := getUserFromCookie(r, w)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
 	}
 
 	var body io.Reader = r.Body
@@ -273,28 +257,11 @@ func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user models.User
-	cookieToken, err := r.Cookie("token")
-	if err != nil || cookieToken.Value == "" {
-		uuid := models.GenerateUUID()
-		user, err := models.CreateUser(uuid)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
-			return
-		}
-
-		http.SetCookie(w, &http.Cookie{
-			Name:  "token",
-			Value: user.Token,
-		})
-	} else {
-		user, err = models.GetUser(cookieToken.Value)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
-			return
-		}
+	user, err := getUserFromCookie(r, w)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
 	}
 
 	shortUrls := h.service.GetUserURLs(user.UUID)
@@ -326,4 +293,21 @@ func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
+}
+
+func getUserFromCookie(r *http.Request, w http.ResponseWriter) (*models.User, error) {
+	cookieToken, err := r.Cookie("token")
+	if err != nil || cookieToken.Value == "" {
+		uuid := models.GenerateUUID()
+		user, err := models.CreateUser(uuid)
+		if err != nil {
+			return nil, err
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:  "token",
+			Value: user.Token,
+		})
+		return user, nil
+	}
+	return models.GetUser(cookieToken.Value)
 }

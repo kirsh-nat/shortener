@@ -33,13 +33,13 @@ func CreateUser(uuid string) (*User, error) {
 	}, nil
 }
 
-func GetUser(token string) (User, error) {
+func GetUser(token string) (*User, error) {
 	userID, err := getUserID(token)
 	if err != nil {
-		return User{}, errors.New("user not found")
+		return nil, errors.New("user not found")
 	}
 
-	return User{UUID: userID, Token: token}, nil
+	return &User{UUID: userID, Token: token}, nil
 }
 
 func buildJWTString(UUID string) (string, error) {
