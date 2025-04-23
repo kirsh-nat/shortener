@@ -276,13 +276,22 @@ func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	cookieToken, err := r.Cookie("token")
 	if err != nil || cookieToken.Value == "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Autentification error"))
-		return
+		uuid := models.GenerateUUID()
+		user, err := models.CreateUser(uuid)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		http.SetCookie(w, &http.Cookie{
+			Name:  "token",
+			Value: user.Token,
+		})
 	} else {
 		user, err = models.GetUser(cookieToken.Value)
 		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
+			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
 		}
