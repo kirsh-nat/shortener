@@ -39,19 +39,19 @@ func (s *URLService) AddBatch(host string, data []map[string]string) ([]byte, er
 	return s.repo.AddBatch(host, data)
 }
 
-func (s *URLService) AddUserURL(userId, short string) {
-	if _, ok := s.userURLs[userId]; !ok {
-		s.userURLs[userId] = make([]string, 0)
+func (s *URLService) AddUserURL(userID, short string) {
+	if _, ok := s.userURLs[userID]; !ok {
+		s.userURLs[userID] = make([]string, 0)
 	}
 
-	s.userURLs[userId] = append(s.userURLs[userId], short)
+	s.userURLs[userID] = append(s.userURLs[userID], short)
 }
 
-func (s *URLService) GetUserURLs(userId string) []string {
+func (s *URLService) GetUserURLs(userID string) []string {
 
-	if _, ok := s.userURLs[userId]; !ok {
+	if _, ok := s.userURLs[userID]; !ok {
 		return []string{}
 	}
 
-	return s.userURLs[userId]
+	return s.userURLs[userID]
 }
