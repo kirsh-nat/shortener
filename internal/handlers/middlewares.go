@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"compress/gzip"
-	"context"
 	"io"
 	"net/http"
 	"strings"
@@ -29,34 +28,34 @@ func Middleware(h http.Handler) http.HandlerFunc {
 			responseData:   responseData,
 		}
 
-		cookieToken, err := r.Cookie("token")
-		var user *models.User
+		// cookieToken, err := r.Cookie("token")
+		// var user *models.User
 
-		if err != nil || cookieToken == nil || cookieToken.Value == "" {
-			uuid := models.GenerateUUID()
-			app.Sugar.Info("created user UUID: ", uuid)
-			user, err = models.CreateUser(uuid)
-			if err != nil {
-				http.Error(w, "Unable to create user", http.StatusInternalServerError)
-				return
-			}
-			http.SetCookie(w, &http.Cookie{
-				Name:  "token",
-				Value: user.Token,
-				Path:  "/",
-			})
-		} else {
-			user, err = models.GetUser(cookieToken.Value)
-			if err != nil {
-				http.Error(w, "Unable to get user", http.StatusInternalServerError)
-				return
-			}
-		}
+		// if err != nil || cookieToken == nil || cookieToken.Value == "" {
+		// 	uuid := models.GenerateUUID()
+		// 	app.Sugar.Info("created user UUID: ", uuid)
+		// 	user, err = models.CreateUser(uuid)
+		// 	if err != nil {
+		// 		http.Error(w, "Unable to create user", http.StatusInternalServerError)
+		// 		return
+		// 	}
+		// 	http.SetCookie(w, &http.Cookie{
+		// 		Name:  "token",
+		// 		Value: user.Token,
+		// 	})
+		// } else {
+		// 	user, err = models.GetUser(cookieToken.Value)
+		// 	if err != nil {
+		// 		http.Error(w, "Unable to get user", http.StatusInternalServerError)
+		// 		return
+		// 	}
+		// }
 
-		ctx := context.WithValue(r.Context(), UserKey{}, user)
+		//ctx := context.WithValue(r.Context(), UserKey{}, user)
 
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-			h.ServeHTTP(&lw, r.WithContext(ctx))
+			h.ServeHTTP(&lw, r)
+			//h.ServeHTTP(&lw, r.WithContext(ctx))
 			return
 		}
 
@@ -69,7 +68,8 @@ func Middleware(h http.Handler) http.HandlerFunc {
 
 		w.Header().Set("Content-Encoding", "gzip")
 
-		h.ServeHTTP(gzipWriter{ResponseWriter: &lw, Writer: gz}, r.WithContext(ctx))
+		//h.ServeHTTP(gzipWriter{ResponseWriter: &lw, Writer: gz}, r.WithContext(ctx))
+		h.ServeHTTP(gzipWriter{ResponseWriter: &lw, Writer: gz}, r)
 
 		duration := time.Since(start)
 

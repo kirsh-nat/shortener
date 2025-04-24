@@ -12,6 +12,7 @@ import (
 
 	"github.com/kirsh-nat/shortener.git/internal/app"
 	"github.com/kirsh-nat/shortener.git/internal/domain"
+	"github.com/kirsh-nat/shortener.git/internal/models"
 	"github.com/kirsh-nat/shortener.git/internal/services"
 )
 
@@ -61,10 +62,32 @@ func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Method not allowed"))
 		return
 	}
-	user, ok := GetUserFromContext(r)
-	if !ok {
-		http.Error(w, "User not found", http.StatusUnauthorized)
-		return
+	//user, ok := GetUserFromContext(r)
+	// if !ok {
+	// 	http.Error(w, "User not found", http.StatusUnauthorized)
+	// 	return
+	// }
+
+	cookieToken, err := r.Cookie("token")
+	var user *models.User
+	if err != nil || cookieToken == nil || cookieToken.Value == "" {
+		uuid := models.GenerateUUID()
+		app.Sugar.Info("created user UUID: ", uuid)
+		user, err = models.CreateUser(uuid)
+		if err != nil {
+			http.Error(w, "Unable to create user", http.StatusInternalServerError)
+			return
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:  "token",
+			Value: user.Token,
+		})
+	} else {
+		user, err = models.GetUser(cookieToken.Value)
+		if err != nil {
+			http.Error(w, "Unable to get user", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	app.Sugar.Info(" new URL created by user: ", user.UUID)
@@ -170,7 +193,20 @@ func (h *URLHandler) GetAPIShorten(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		user, _ := GetUserFromContext(r)
+		//user, _ := GetUserFromContext(r)
+		cookieToken, err := r.Cookie("token")
+		var user *models.User
+		if err != nil || cookieToken == nil || cookieToken.Value == "" {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("Unauthorized"))
+			return
+		} else {
+			user, err = models.GetUser(cookieToken.Value)
+			if err != nil {
+				http.Error(w, "Unable to get user", http.StatusInternalServerError)
+				return
+			}
+		}
 
 		w.Header().Set("Content-Type", "application/json")
 		shortURL := services.MakeShortURL(dataURL.URL)
@@ -261,12 +297,25 @@ func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, ok := GetUserFromContext(r)
+	//	user, ok := GetUserFromContext(r)
+	// if !ok {
+	// 	w.WriteHeader(http.StatusUnauthorized)
+	// 	w.Write([]byte("Unauthorized"))
+	// 	return
+	// }
 
-	if !ok {
+	cookieToken, err := r.Cookie("token")
+	var user *models.User
+	if err != nil || cookieToken == nil || cookieToken.Value == "" {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Unauthorized"))
 		return
+	} else {
+		user, err = models.GetUser(cookieToken.Value)
+		if err != nil {
+			http.Error(w, "Unable to get user", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	app.Sugar.Info(" Requested url list by  by user: ", user.UUID)
@@ -317,11 +366,23 @@ func (h *URLHandler) DeleteUserURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, _ := GetUserFromContext(r)
+	cookieToken, err := r.Cookie("token")
+	var user *models.User
+	if err != nil || cookieToken == nil || cookieToken.Value == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Unauthorized"))
+		return
+	} else {
+		user, err = models.GetUser(cookieToken.Value)
+		if err != nil {
+			http.Error(w, "Unable to get user", http.StatusInternalServerError)
+			return
+		}
+	}
 
 	var dataURL []string
 	var buf bytes.Buffer
-	_, err := buf.ReadFrom(r.Body)
+	_, err = buf.ReadFrom(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
