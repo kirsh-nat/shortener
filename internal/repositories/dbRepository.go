@@ -42,14 +42,23 @@ func (r *DBRepository) Add(ctx context.Context, shortURL, originalURL, userID st
 
 func (r *DBRepository) Get(short string) (string, error) {
 	row := r.db.QueryRowContext(context.Background(),
-		"SELECT original_url from links where short_url = $1", short)
-	var long sql.NullString
+		"SELECT original_url, deleted FROM links WHERE short_url = $1", short)
 
-	err := row.Scan(&long)
+	var long sql.NullString
+	var deleted bool
+
+	err := row.Scan(&long, &deleted)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", domain.ErrorURLNotFound
+		}
 		return "", err
 	}
+
 	if long.Valid {
+		if deleted {
+			return long.String, fmt.Errorf("url deleted")
+		}
 		return long.String, nil
 	}
 
