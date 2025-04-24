@@ -29,20 +29,6 @@ func Middleware(h http.Handler) http.HandlerFunc {
 			responseData:   responseData,
 		}
 
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-			h.ServeHTTP(&lw, r)
-			return
-		}
-
-		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
-		if err != nil {
-			io.WriteString(w, err.Error())
-			return
-		}
-		defer gz.Close()
-
-		w.Header().Set("Content-Encoding", "gzip")
-
 		cookieToken, err := r.Cookie("token")
 		var user *models.User
 
@@ -66,6 +52,20 @@ func Middleware(h http.Handler) http.HandlerFunc {
 		}
 
 		ctx := context.WithValue(r.Context(), UserKey{}, user)
+
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			h.ServeHTTP(&lw, r.WithContext(ctx))
+			return
+		}
+
+		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		defer gz.Close()
+
+		w.Header().Set("Content-Encoding", "gzip")
 
 		h.ServeHTTP(gzipWriter{ResponseWriter: &lw, Writer: gz}, r.WithContext(ctx))
 
