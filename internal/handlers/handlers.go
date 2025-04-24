@@ -128,7 +128,7 @@ func (h *URLHandler) Get(w http.ResponseWriter, r *http.Request) {
 	var redirectURL string
 	var err error
 
-	redirectURL, err = h.service.Get(context.Background(), short)
+	redirectURL, err = h.service.Get(r.Context(), short)
 
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
@@ -159,7 +159,7 @@ func (h *URLHandler) GetAPIShorten(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 		shortURL := services.MakeShortURL(dataURL.URL)
-		err = h.service.Add(context.Background(), shortURL, dataURL.URL)
+		err = h.service.Add(r.Context(), shortURL, dataURL.URL)
 		var response []byte
 		result := "http://" + app.AppSettings.Addr + "/" + shortURL
 		var dErr *domain.DublicateError
