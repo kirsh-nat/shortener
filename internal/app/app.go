@@ -24,6 +24,7 @@ func SetAppConfig() {
 
 }
 
+// TODO разные файлы
 func setLogger() {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
@@ -38,6 +39,11 @@ func setLogger() {
 func DBConnect(ps string) *sql.DB {
 	DB, err := sql.Open("pgx", ps)
 	if err != nil {
+		Sugar.Fatalw(err.Error(), "event", err)
+		return nil
+	}
+
+	if err := DB.Ping(); err != nil {
 		Sugar.Fatalw(err.Error(), "event", err)
 		return nil
 	}

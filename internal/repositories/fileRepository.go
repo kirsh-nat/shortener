@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"sync"
 
 	"github.com/kirsh-nat/shortener.git/internal/domain"
 	"github.com/kirsh-nat/shortener.git/internal/models"
@@ -13,8 +14,9 @@ import (
 )
 
 type FileRepository struct {
-	//db       *sql.DB
+	userURLs map[string][]string
 	filePath string
+	mu       sync.RWMutex
 }
 
 type FileReader struct {
@@ -28,10 +30,12 @@ type urlBatchData struct {
 }
 
 func NewFileRepository(filePath string) models.URLRepository {
-	return &FileRepository{filePath: filePath}
+	return &FileRepository{filePath: filePath, userURLs: make(map[string][]string)}
 }
 
 func (r *FileRepository) Add(ctx context.Context, shortURL, originalURL, userID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	file, err := os.OpenFile(r.filePath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		return err
@@ -69,6 +73,8 @@ func (r *FileRepository) Add(ctx context.Context, shortURL, originalURL, userID 
 	if err := os.Rename(tempFilePath, r.filePath); err != nil {
 		return err
 	}
+
+	r.AddUserURL(userID, shortURL)
 
 	return nil
 }
@@ -194,4 +200,20 @@ func newFileReader(filename string) (*FileReader, error) {
 		file:   file,
 		reader: bufio.NewReader(file),
 	}, nil
+}
+
+func (r *FileRepository) AddUserURL(userID, short string) {
+	if _, ok := r.userURLs[userID]; !ok {
+		r.userURLs[userID] = make([]string, 0)
+	}
+
+	r.userURLs[userID] = append(r.userURLs[userID], short)
+}
+
+func (r *FileRepository) GetUserURLs(userID string) ([]string, error) {
+	if _, ok := r.userURLs[userID]; !ok {
+		return []string{}, nil
+	}
+
+	return r.userURLs[userID], nil
 }

@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"encoding/json"
+	"sync"
 
 	"github.com/kirsh-nat/shortener.git/internal/domain"
 	"github.com/kirsh-nat/shortener.git/internal/models"
@@ -10,14 +11,19 @@ import (
 )
 
 type MemoryRepository struct {
-	store map[string]string
+	mu       sync.RWMutex
+	store    map[string]string
+	userURLs map[string][]string
 }
 
 func NewMemoryRepository() models.URLRepository {
-	return &MemoryRepository{store: make(map[string]string)}
+	return &MemoryRepository{store: make(map[string]string), userURLs: make(map[string][]string)}
 }
 
 func (r *MemoryRepository) Add(ctx context.Context, shortURL, originalURL, userID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	if _, ok := r.store[shortURL]; ok {
 		return domain.NewDublicateError("Memory dublicate error", nil)
 	}
@@ -52,7 +58,6 @@ func (r *MemoryRepository) AddBatch(host string, data []map[string]string) ([]by
 		original := v["original_url"]
 		short := services.MakeShortURL(original)
 
-		//TODO: add userID RIGHT here
 		err := r.Add(context.Background(), short, original, "")
 		if err != nil {
 			return nil, err
@@ -73,4 +78,20 @@ func (r *MemoryRepository) AddBatch(host string, data []map[string]string) ([]by
 }
 
 func (r *MemoryRepository) DeleteBatch(data []string, userID string) {
+}
+
+func (r *MemoryRepository) AddUserURL(userID, short string) {
+	if _, ok := r.userURLs[userID]; !ok {
+		r.userURLs[userID] = make([]string, 0)
+	}
+
+	r.userURLs[userID] = append(r.userURLs[userID], short)
+}
+
+func (r *MemoryRepository) GetUserURLs(userID string) ([]string, error) {
+	if _, ok := r.userURLs[userID]; !ok {
+		return []string{}, nil
+	}
+
+	return r.userURLs[userID], nil
 }

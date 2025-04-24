@@ -7,12 +7,11 @@ import (
 )
 
 type URLService struct {
-	repo     models.URLRepository
-	userURLs map[string][]string
+	repo models.URLRepository
 }
 
 func NewURLService(repo models.URLRepository) *URLService {
-	return &URLService{repo: repo, userURLs: make(map[string][]string)}
+	return &URLService{repo: repo}
 }
 
 func (s *URLService) Add(ctx context.Context, shortURL, originalURL, userID string) error {
@@ -44,18 +43,9 @@ func (s *URLService) DeleteBatch(shortURLs []string, userID string) {
 }
 
 func (s *URLService) AddUserURL(userID, short string) {
-	if _, ok := s.userURLs[userID]; !ok {
-		s.userURLs[userID] = make([]string, 0)
-	}
-
-	s.userURLs[userID] = append(s.userURLs[userID], short)
+	s.repo.AddUserURL(userID, short)
 }
 
-func (s *URLService) GetUserURLs(userID string) []string {
-
-	if _, ok := s.userURLs[userID]; !ok {
-		return []string{}
-	}
-
-	return s.userURLs[userID]
+func (s *URLService) GetUserURLs(userID string) ([]string, error) {
+	return s.repo.GetUserURLs(userID)
 }

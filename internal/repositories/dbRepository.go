@@ -35,6 +35,7 @@ func (r *DBRepository) Add(ctx context.Context, shortURL, originalURL, userID st
 		}
 		return err
 	}
+	r.AddUserURL(userID, shortURL)
 
 	return nil
 
@@ -173,8 +174,6 @@ func (r *DBRepository) updateDeletedStatus(shortURL, userID string) error {
 	result, err := r.db.ExecContext(ctx,
 		"UPDATE links SET deleted = $1 WHERE short_url = $2 AND user_id = $3", true, shortURL, userID)
 
-	fmt.Println("Updatedn", shortURL, userID)
-
 	if err != nil {
 		return err
 	}
@@ -185,4 +184,31 @@ func (r *DBRepository) updateDeletedStatus(shortURL, userID string) error {
 	}
 
 	return nil
+}
+
+func (r *DBRepository) AddUserURL(userID, short string) {
+}
+
+func (r *DBRepository) GetUserURLs(userID string) ([]string, error) {
+	rows, err := r.db.QueryContext(context.Background(),
+		"SELECT short_url FROM links WHERE user_id = $1", userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var urls []string
+	for rows.Next() {
+		var url string
+		if err := rows.Scan(&url); err != nil {
+			return nil, err
+		}
+		urls = append(urls, url)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return urls, nil
 }

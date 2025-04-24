@@ -261,7 +261,14 @@ func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 
 	user, _ := GetUserFromContext(r)
 
-	shortUrls := h.service.GetUserURLs(user.UUID)
+	shortUrls, err := h.service.GetUserURLs(user.UUID)
+
+	if err != nil {
+		app.Sugar.Errorw(err.Error(), "event", err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Method not allowed"))
+		return
+	}
 
 	type response struct {
 		Short    string `json:"ShortURL"`
