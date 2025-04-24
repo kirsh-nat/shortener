@@ -67,6 +67,8 @@ func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	app.Sugar.Info(" new URL created by user: ", user.UUID)
+
 	var body io.Reader = r.Body
 	if r.Header.Get("Content-Encoding") == "gzip" {
 		gz, err := gzip.NewReader(r.Body)
@@ -259,7 +261,15 @@ func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, _ := GetUserFromContext(r)
+	user, ok := GetUserFromContext(r)
+
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Unauthorized"))
+		return
+	}
+
+	app.Sugar.Info(" Requested url list by  by user: ", user.UUID)
 
 	shortUrls, err := h.service.GetUserURLs(user.UUID)
 

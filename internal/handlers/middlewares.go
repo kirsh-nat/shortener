@@ -34,6 +34,7 @@ func Middleware(h http.Handler) http.HandlerFunc {
 
 		if err != nil || cookieToken.Value == "" {
 			uuid := models.GenerateUUID()
+			app.Sugar.Info("created user UUID: ", uuid)
 			user, err = models.CreateUser(uuid)
 			if err != nil {
 				http.Error(w, "Unable to create user", http.StatusInternalServerError)
