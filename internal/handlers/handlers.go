@@ -70,7 +70,7 @@ func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
 
 	cookieToken, err := r.Cookie("token")
 	var user *models.User
-	if err != nil || cookieToken == nil || cookieToken.Value == "" {
+	if err != nil || cookieToken == nil {
 		uuid := models.GenerateUUID()
 		app.Sugar.Info("created user UUID: ", uuid)
 		user, err = models.CreateUser(uuid)
@@ -196,10 +196,18 @@ func (h *URLHandler) GetAPIShorten(w http.ResponseWriter, r *http.Request) {
 		//user, _ := GetUserFromContext(r)
 		cookieToken, err := r.Cookie("token")
 		var user *models.User
-		if err != nil || cookieToken == nil || cookieToken.Value == "" {
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("Unauthorized"))
-			return
+		if err != nil || cookieToken == nil {
+			uuid := models.GenerateUUID()
+			app.Sugar.Info("created user UUID: ", uuid)
+			user, err = models.CreateUser(uuid)
+			if err != nil {
+				http.Error(w, "Unable to create user", http.StatusInternalServerError)
+				return
+			}
+			http.SetCookie(w, &http.Cookie{
+				Name:  "token",
+				Value: user.Token,
+			})
 		} else {
 			user, err = models.GetUser(cookieToken.Value)
 			if err != nil {
@@ -306,7 +314,7 @@ func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 
 	cookieToken, err := r.Cookie("token")
 	var user *models.User
-	if err != nil || cookieToken == nil || cookieToken.Value == "" {
+	if err != nil || cookieToken == nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Unauthorized"))
 		return
@@ -368,7 +376,7 @@ func (h *URLHandler) DeleteUserURLs(w http.ResponseWriter, r *http.Request) {
 
 	cookieToken, err := r.Cookie("token")
 	var user *models.User
-	if err != nil || cookieToken == nil || cookieToken.Value == "" {
+	if err != nil || cookieToken == nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Unauthorized"))
 		return
