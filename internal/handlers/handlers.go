@@ -261,13 +261,6 @@ func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 
 	user, _ := GetUserFromContext(r)
 
-	// user, err := getUserFromCookie(r, w)
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// 	w.Write([]byte(err.Error()))
-	// 	return
-	// }
-
 	shortUrls := h.service.GetUserURLs(user.UUID)
 
 	type response struct {
@@ -282,7 +275,7 @@ func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 			app.Sugar.Errorw(err.Error(), "event", err)
 			continue
 		}
-		res = append(res, response{Short: v, Original: original})
+		res = append(res, response{Short: "http://" + app.AppSettings.Addr + "/" + v, Original: original})
 	}
 
 	w.Header().Set("Content-Type", "application/json")
