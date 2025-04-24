@@ -12,7 +12,6 @@ import (
 
 	"github.com/kirsh-nat/shortener.git/internal/app"
 	"github.com/kirsh-nat/shortener.git/internal/domain"
-	"github.com/kirsh-nat/shortener.git/internal/models"
 	"github.com/kirsh-nat/shortener.git/internal/services"
 )
 
@@ -62,9 +61,11 @@ func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Method not allowed"))
 		return
 	}
-	var user *models.User
-
-	user, _ = GetUserFromContext(r)
+	user, ok := GetUserFromContext(r)
+	if !ok {
+		http.Error(w, "User not found", http.StatusUnauthorized)
+		return
+	}
 
 	var body io.Reader = r.Body
 	if r.Header.Get("Content-Encoding") == "gzip" {
