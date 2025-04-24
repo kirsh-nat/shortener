@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"time"
 
 	"github.com/kirsh-nat/shortener.git/internal/app"
 	"github.com/kirsh-nat/shortener.git/internal/domain"
@@ -95,10 +94,10 @@ func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
 
 	shortURL := services.MakeShortURL(parsedURL.String())
 
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
+	// ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	// defer cancel()
 
-	err = h.service.Add(ctx, shortURL, parsedURL.String(), user.UUID)
+	err = h.service.Add(r.Context(), shortURL, parsedURL.String(), user.UUID)
 	var dErr *domain.DublicateError
 	var response string
 	if errors.As(err, &dErr) {
