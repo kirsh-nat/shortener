@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/google/uuid"
 )
 
 type User struct {
@@ -79,5 +78,6 @@ func getUserID(tokenString string) (string, error) {
 }
 
 func GenerateUUID() string {
-	return uuid.New().String()
+	return "uuid"
+	// return uuid.New().String()
 }
