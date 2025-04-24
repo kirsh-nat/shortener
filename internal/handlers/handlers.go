@@ -65,12 +65,7 @@ func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
 	}
 	var user *models.User
 
-	user, err := getUserFromCookie(r, w)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
-		return
-	}
+	user, _ = GetUserFromContext(r)
 
 	var body io.Reader = r.Body
 	if r.Header.Get("Content-Encoding") == "gzip" {
@@ -173,12 +168,7 @@ func (h *URLHandler) GetAPIShorten(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		user, err := getUserFromCookie(r, w)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
-			return
-		}
+		user, _ := GetUserFromContext(r)
 
 		w.Header().Set("Content-Type", "application/json")
 		shortURL := services.MakeShortURL(dataURL.URL)
@@ -269,12 +259,14 @@ func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := getUserFromCookie(r, w)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
-		return
-	}
+	user, _ := GetUserFromContext(r)
+
+	// user, err := getUserFromCookie(r, w)
+	// if err != nil {
+	// 	w.WriteHeader(http.StatusInternalServerError)
+	// 	w.Write([]byte(err.Error()))
+	// 	return
+	// }
 
 	shortUrls := h.service.GetUserURLs(user.UUID)
 
@@ -315,16 +307,11 @@ func (h *URLHandler) DeleteUserURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := getUserFromCookie(r, w)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
-		return
-	}
+	user, _ := GetUserFromContext(r)
 
 	var dataURL []string
 	var buf bytes.Buffer
-	_, err = buf.ReadFrom(r.Body)
+	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -338,21 +325,4 @@ func (h *URLHandler) DeleteUserURLs(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusAccepted)
 	w.Write([]byte("OK"))
-}
-
-func getUserFromCookie(r *http.Request, w http.ResponseWriter) (*models.User, error) {
-	cookieToken, err := r.Cookie("token")
-	if err != nil || cookieToken.Value == "" {
-		uuid := models.GenerateUUID()
-		user, err := models.CreateUser(uuid)
-		if err != nil {
-			return nil, err
-		}
-		http.SetCookie(w, &http.Cookie{
-			Name:  "token",
-			Value: user.Token,
-		})
-		return user, nil
-	}
-	return models.GetUser(cookieToken.Value)
 }

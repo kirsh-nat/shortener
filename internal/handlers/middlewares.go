@@ -2,13 +2,17 @@ package handlers
 
 import (
 	"compress/gzip"
+	"context"
 	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/kirsh-nat/shortener.git/internal/app"
+	"github.com/kirsh-nat/shortener.git/internal/models"
 )
+
+type UserKey struct{}
 
 func Middleware(h http.Handler) http.HandlerFunc {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +43,31 @@ func Middleware(h http.Handler) http.HandlerFunc {
 
 		w.Header().Set("Content-Encoding", "gzip")
 
-		h.ServeHTTP(gzipWriter{ResponseWriter: &lw, Writer: gz}, r)
+		cookieToken, err := r.Cookie("token")
+		var user *models.User
+
+		if err != nil || cookieToken.Value == "" {
+			uuid := models.GenerateUUID()
+			user, err = models.CreateUser(uuid)
+			if err != nil {
+				http.Error(w, "Unable to create user", http.StatusInternalServerError)
+				return
+			}
+			http.SetCookie(w, &http.Cookie{
+				Name:  "token",
+				Value: user.Token,
+			})
+		} else {
+			user, err = models.GetUser(cookieToken.Value)
+			if err != nil {
+				http.Error(w, "Unable to get user", http.StatusInternalServerError)
+				return
+			}
+		}
+
+		ctx := context.WithValue(r.Context(), UserKey{}, user)
+
+		h.ServeHTTP(gzipWriter{ResponseWriter: &lw, Writer: gz}, r.WithContext(ctx))
 
 		duration := time.Since(start)
 
@@ -58,4 +86,9 @@ func Middleware(h http.Handler) http.HandlerFunc {
 	}
 
 	return logFn
+}
+
+func GetUserFromContext(r *http.Request) (*models.User, bool) {
+	user, ok := r.Context().Value(UserKey{}).(*models.User)
+	return user, ok
 }
