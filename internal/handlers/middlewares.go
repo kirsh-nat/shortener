@@ -32,7 +32,7 @@ func Middleware(h http.Handler) http.HandlerFunc {
 		cookieToken, err := r.Cookie("token")
 		var user *models.User
 
-		if err != nil || cookieToken.Value == "" {
+		if err != nil || cookieToken == nil || cookieToken.Value == "" {
 			uuid := models.GenerateUUID()
 			app.Sugar.Info("created user UUID: ", uuid)
 			user, err = models.CreateUser(uuid)
@@ -43,6 +43,7 @@ func Middleware(h http.Handler) http.HandlerFunc {
 			http.SetCookie(w, &http.Cookie{
 				Name:  "token",
 				Value: user.Token,
+				Path:  "/",
 			})
 		} else {
 			user, err = models.GetUser(cookieToken.Value)
