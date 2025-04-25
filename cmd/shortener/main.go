@@ -5,7 +5,6 @@ import (
 
 	"github.com/kirsh-nat/shortener.git/internal/app"
 	"github.com/kirsh-nat/shortener.git/internal/handlers"
-	"github.com/kirsh-nat/shortener.git/internal/models"
 	"github.com/kirsh-nat/shortener.git/internal/repositories"
 	"github.com/kirsh-nat/shortener.git/internal/services"
 )
@@ -15,9 +14,8 @@ func main() {
 
 	app.ParseFlags(app.AppSettings)
 	app.ValidateConfig(app.AppSettings)
-	//app.DB = app.DBConnect(app.AppSettings.SetDBConnection)
 
-	var repo models.URLRepository
+	var repo services.URLRepository
 
 	if app.AppSettings.SetDBConnection != "" {
 		app.DB = app.DBConnect(app.AppSettings.SetDBConnection)

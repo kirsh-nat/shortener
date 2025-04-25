@@ -3,12 +3,10 @@ package repositories
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/kirsh-nat/shortener.git/cmd/shortener/migrations"
 	"github.com/kirsh-nat/shortener.git/internal/domain"
-	"github.com/kirsh-nat/shortener.git/internal/migrations"
-	"github.com/kirsh-nat/shortener.git/internal/models"
 	"github.com/kirsh-nat/shortener.git/internal/services"
 )
 
@@ -16,7 +14,7 @@ type DBRepository struct {
 	db *sql.DB
 }
 
-func NewDBRepository(db *sql.DB) models.URLRepository {
+func NewDBRepository(db *sql.DB) services.URLRepository {
 	migrations.CreateLinkTable(db)
 	return &DBRepository{db: db}
 }
@@ -60,13 +58,8 @@ func (r *DBRepository) Ping() error {
 	return nil
 }
 
-func (r *DBRepository) AddBatch(context context.Context, host string, data []map[string]string) ([]byte, error) {
-	type urlData struct {
-		ID    string `json:"correlation_id"`
-		Short string `json:"short_url"`
-	}
-
-	var res []urlData
+func (r *DBRepository) AddBatch(context context.Context, host string, data []services.BatchItem) ([]services.UrlData, error) {
+	var res []services.UrlData
 
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -82,17 +75,15 @@ func (r *DBRepository) AddBatch(context context.Context, host string, data []map
 	defer stmt.Close()
 
 	for _, v := range data {
-		code := v["correlation_id"]
-		original := v["original_url"]
-		short := services.MakeShortURL(original)
+		short := services.MakeShortURL(v.Original)
 
-		_, err := stmt.ExecContext(context, short, original)
+		_, err := stmt.ExecContext(context, short, v.Original)
 		if err != nil {
 			return nil, err
 		}
 
-		res = append(res, urlData{
-			ID:    code,
+		res = append(res, services.UrlData{
+			ID:    v.ID,
 			Short: "http://" + host + "/" + short,
 		})
 	}
@@ -101,10 +92,5 @@ func (r *DBRepository) AddBatch(context context.Context, host string, data []map
 		return nil, err
 	}
 
-	responseJSON, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
-	}
-
-	return responseJSON, nil
+	return res, nil
 }

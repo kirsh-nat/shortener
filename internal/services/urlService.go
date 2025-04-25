@@ -2,15 +2,30 @@ package services
 
 import (
 	"context"
-
-	"github.com/kirsh-nat/shortener.git/internal/models"
 )
 
-type URLService struct {
-	repo models.URLRepository
+type BatchItem struct {
+	ID       string `json:"correlation_id"`
+	Original string `json:"original_url"`
 }
 
-func NewURLService(repo models.URLRepository) *URLService {
+type URLRepository interface {
+	Add(ctx context.Context, shortURL, originalURL string) error
+	Get(context context.Context, short string) (string, error)
+	Ping() error
+	AddBatch(context context.Context, host string, data []BatchItem) ([]UrlData, error)
+}
+
+type UrlData struct {
+	ID    string `json:"correlation_id"`
+	Short string `json:"short_url"`
+}
+
+type URLService struct {
+	repo URLRepository
+}
+
+func NewURLService(repo URLRepository) *URLService {
 	return &URLService{repo: repo}
 }
 
@@ -34,6 +49,6 @@ func (s *URLService) Ping() error {
 	return s.repo.Ping()
 }
 
-func (s *URLService) AddBatch(context context.Context, host string, data []map[string]string) ([]byte, error) {
+func (s *URLService) AddBatch(context context.Context, host string, data []BatchItem) ([]UrlData, error) {
 	return s.repo.AddBatch(context, host, data)
 }

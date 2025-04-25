@@ -2,22 +2,25 @@ package repositories
 
 import (
 	"context"
-	"encoding/json"
+	"sync"
 
 	"github.com/kirsh-nat/shortener.git/internal/domain"
-	"github.com/kirsh-nat/shortener.git/internal/models"
 	"github.com/kirsh-nat/shortener.git/internal/services"
 )
 
 type MemoryRepository struct {
+	mu    sync.RWMutex
 	store map[string]string
 }
 
-func NewMemoryRepository() models.URLRepository {
+func NewMemoryRepository() services.URLRepository {
 	return &MemoryRepository{store: make(map[string]string)}
 }
 
 func (r *MemoryRepository) Add(ctx context.Context, shortURL, originalURL string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	if _, ok := r.store[shortURL]; ok {
 		return domain.NewDublicateError("Memory dublicate error", nil)
 	}
@@ -39,34 +42,22 @@ func (r *MemoryRepository) Ping() error {
 	return nil
 }
 
-func (r *MemoryRepository) AddBatch(context context.Context, host string, data []map[string]string) ([]byte, error) {
-	type urlData struct {
-		ID    string `json:"correlation_id"`
-		Short string `json:"short_url"`
-	}
-
-	var res []urlData
+func (r *MemoryRepository) AddBatch(context context.Context, host string, data []services.BatchItem) ([]services.UrlData, error) {
+	var res []services.UrlData
 
 	for _, v := range data {
-		code := v["correlation_id"]
-		original := v["original_url"]
-		short := services.MakeShortURL(original)
+		short := services.MakeShortURL(v.Original)
 
-		err := r.Add(context, short, original)
+		err := r.Add(context, short, v.Original)
 		if err != nil {
 			return nil, err
 		}
 
-		res = append(res, urlData{
-			ID:    code,
+		res = append(res, services.UrlData{
+			ID:    v.ID,
 			Short: "http://" + host + "/" + short,
 		})
 	}
 
-	responseJSON, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
-	}
-
-	return responseJSON, nil
+	return res, nil
 }

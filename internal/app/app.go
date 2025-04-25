@@ -9,9 +9,8 @@ import (
 
 var (
 	AppSettings *Config
-	//	Store       *URLStore
-	Sugar zap.SugaredLogger
-	DB    *sql.DB
+	Sugar       zap.SugaredLogger
+	DB          *sql.DB
 )
 
 func SetAppConfig() {
@@ -22,25 +21,4 @@ func SetAppConfig() {
 		"addr", AppSettings.Addr,
 	)
 
-}
-
-func setLogger() {
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		Sugar.Fatalw(err.Error(), "event", err)
-
-	}
-	defer logger.Sync()
-
-	Sugar = *logger.Sugar()
-}
-
-func DBConnect(ps string) *sql.DB {
-	DB, err := sql.Open("pgx", ps)
-	if err != nil {
-		Sugar.Fatalw(err.Error(), "event", err)
-		return nil
-	}
-
-	return DB
 }

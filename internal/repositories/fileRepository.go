@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/kirsh-nat/shortener.git/internal/domain"
-	"github.com/kirsh-nat/shortener.git/internal/models"
 	"github.com/kirsh-nat/shortener.git/internal/services"
 )
 
@@ -22,12 +21,7 @@ type FileReader struct {
 	reader *bufio.Reader
 }
 
-type urlBatchData struct {
-	ID    string `json:"correlation_id"`
-	Short string `json:"short_url"`
-}
-
-func NewFileRepository(filePath string) models.URLRepository {
+func NewFileRepository(filePath string) services.URLRepository {
 	return &FileRepository{filePath: filePath}
 }
 
@@ -100,7 +94,6 @@ func (r *FileRepository) loadData(file *os.File, data *map[string]string) error 
 		if err != io.EOF {
 			return err
 		}
-		//	return err
 	}
 
 	for k, v := range temp {
@@ -114,8 +107,8 @@ func (r *FileRepository) Ping() error {
 	return nil
 }
 
-func (r *FileRepository) AddBatch(_ context.Context, host string, data []map[string]string) ([]byte, error) {
-	var res []urlBatchData
+func (r *FileRepository) AddBatch(_ context.Context, host string, data []services.BatchItem) ([]services.UrlData, error) {
+	var res []services.UrlData
 
 	file, err := os.OpenFile(r.filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -125,14 +118,12 @@ func (r *FileRepository) AddBatch(_ context.Context, host string, data []map[str
 
 	m := make(map[string]string)
 	for _, v := range data {
-		code := v["correlation_id"]
-		original := v["original_url"]
-		short := services.MakeShortURL(original)
+		short := services.MakeShortURL(v.Original)
 
-		m[short] = original
+		m[short] = v.Original
 
-		res = append(res, urlBatchData{
-			ID:    code,
+		res = append(res, services.UrlData{
+			ID:    v.ID,
 			Short: "http://" + host + "/" + short,
 		})
 	}
@@ -148,12 +139,7 @@ func (r *FileRepository) AddBatch(_ context.Context, host string, data []map[str
 		return nil, err
 	}
 
-	responseJSON, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
-	}
-
-	return responseJSON, nil
+	return res, nil
 }
 
 func (r FileReader) readFile(res *map[string]string) error {

@@ -18,10 +18,6 @@ import (
 func init() {
 	app.SetAppConfig()
 	app.ValidateConfig(app.AppSettings)
-
-	//repo := repositories.NewFileRepository(app.AppSettings.FilePath) // Works !!
-	//repo := repositories.NewDBRepository(app.DB) // WORKS!!!!
-	// service := services.NewURLService(repo)
 }
 
 func testRequest(t *testing.T, ts *httptest.Server, method, path string, body string) (*http.Response, string) {
@@ -39,7 +35,7 @@ func testRequest(t *testing.T, ts *httptest.Server, method, path string, body st
 }
 
 func TestPingHandler(t *testing.T) {
-	repo := repositories.NewFileRepository(app.AppSettings.FilePath) // Works !!
+	repo := repositories.NewFileRepository(app.AppSettings.FilePath)
 	service := services.NewURLService(repo)
 	handler := NewURLHandler(service)
 
