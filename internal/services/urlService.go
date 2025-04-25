@@ -13,10 +13,10 @@ type URLRepository interface {
 	Add(ctx context.Context, shortURL, originalURL string) error
 	Get(context context.Context, short string) (string, error)
 	Ping() error
-	AddBatch(context context.Context, host string, data []BatchItem) ([]UrlData, error)
+	AddBatch(context context.Context, host string, data []BatchItem) ([]URLData, error)
 }
 
-type UrlData struct {
+type URLData struct {
 	ID    string `json:"correlation_id"`
 	Short string `json:"short_url"`
 }
@@ -49,6 +49,6 @@ func (s *URLService) Ping() error {
 	return s.repo.Ping()
 }
 
-func (s *URLService) AddBatch(context context.Context, host string, data []BatchItem) ([]UrlData, error) {
+func (s *URLService) AddBatch(context context.Context, host string, data []BatchItem) ([]URLData, error) {
 	return s.repo.AddBatch(context, host, data)
 }

@@ -107,8 +107,8 @@ func (r *FileRepository) Ping() error {
 	return nil
 }
 
-func (r *FileRepository) AddBatch(_ context.Context, host string, data []services.BatchItem) ([]services.UrlData, error) {
-	var res []services.UrlData
+func (r *FileRepository) AddBatch(_ context.Context, host string, data []services.BatchItem) ([]services.URLData, error) {
+	var res []services.URLData
 
 	file, err := os.OpenFile(r.filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -122,7 +122,7 @@ func (r *FileRepository) AddBatch(_ context.Context, host string, data []service
 
 		m[short] = v.Original
 
-		res = append(res, services.UrlData{
+		res = append(res, services.URLData{
 			ID:    v.ID,
 			Short: "http://" + host + "/" + short,
 		})

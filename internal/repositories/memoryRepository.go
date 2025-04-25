@@ -42,8 +42,8 @@ func (r *MemoryRepository) Ping() error {
 	return nil
 }
 
-func (r *MemoryRepository) AddBatch(context context.Context, host string, data []services.BatchItem) ([]services.UrlData, error) {
-	var res []services.UrlData
+func (r *MemoryRepository) AddBatch(context context.Context, host string, data []services.BatchItem) ([]services.URLData, error) {
+	var res []services.URLData
 
 	for _, v := range data {
 		short := services.MakeShortURL(v.Original)
@@ -53,7 +53,7 @@ func (r *MemoryRepository) AddBatch(context context.Context, host string, data [
 			return nil, err
 		}
 
-		res = append(res, services.UrlData{
+		res = append(res, services.URLData{
 			ID:    v.ID,
 			Short: "http://" + host + "/" + short,
 		})

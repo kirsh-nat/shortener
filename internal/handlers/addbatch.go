@@ -29,7 +29,7 @@ func (h *URLHandler) AddBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var res []services.UrlData
+	var res []services.URLData
 
 	res, err = h.service.AddBatch(r.Context(), app.AppSettings.Addr, dataURL)
 	if err != nil {

@@ -58,8 +58,8 @@ func (r *DBRepository) Ping() error {
 	return nil
 }
 
-func (r *DBRepository) AddBatch(context context.Context, host string, data []services.BatchItem) ([]services.UrlData, error) {
-	var res []services.UrlData
+func (r *DBRepository) AddBatch(context context.Context, host string, data []services.BatchItem) ([]services.URLData, error) {
+	var res []services.URLData
 
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -82,7 +82,7 @@ func (r *DBRepository) AddBatch(context context.Context, host string, data []ser
 			return nil, err
 		}
 
-		res = append(res, services.UrlData{
+		res = append(res, services.URLData{
 			ID:    v.ID,
 			Short: "http://" + host + "/" + short,
 		})
