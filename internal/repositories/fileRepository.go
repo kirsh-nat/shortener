@@ -124,7 +124,7 @@ func (r *FileRepository) AddBatch(_ context.Context, host string, data []service
 
 		res = append(res, services.URLData{
 			ID:    v.ID,
-			Short: "http://" + host + "/" + short,
+			Short: services.MakeFullShortURL(short, host),
 		})
 	}
 

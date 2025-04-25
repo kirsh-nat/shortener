@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 
 	"github.com/kirsh-nat/shortener.git/internal/app"
+	"github.com/kirsh-nat/shortener.git/internal/domain"
 	"github.com/kirsh-nat/shortener.git/internal/services"
 )
 
@@ -62,10 +64,15 @@ func (h *URLHandler) PingHandler(w http.ResponseWriter, r *http.Request) {
 func (h *URLHandler) shortenURL(ctx context.Context, original string) (string, error) {
 	shortURL := services.MakeShortURL(original)
 	err := h.service.Add(ctx, shortURL, original)
+	var dErr *domain.DublicateError
+
 	if err != nil {
+		if errors.As(err, &dErr) {
+			return services.MakeFullShortURL(shortURL, app.AppSettings.Addr), err
+		}
 		return "", err
 	}
-	result := "http://" + app.AppSettings.Addr + "/" + shortURL
+	result := services.MakeFullShortURL(shortURL, app.AppSettings.Addr)
 
 	return result, nil
 }

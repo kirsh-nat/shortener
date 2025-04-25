@@ -16,3 +16,7 @@ func MakeShortURL(url string) string {
 
 	return hex.EncodeToString(hashed)[:lenURL]
 }
+
+func MakeFullShortURL(codeURL, host string) string {
+	return "http://" + host + "/" + codeURL
+}

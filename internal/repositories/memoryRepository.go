@@ -55,7 +55,7 @@ func (r *MemoryRepository) AddBatch(context context.Context, host string, data [
 
 		res = append(res, services.URLData{
 			ID:    v.ID,
-			Short: "http://" + host + "/" + short,
+			Short: services.MakeFullShortURL(short, host),
 		})
 	}
 

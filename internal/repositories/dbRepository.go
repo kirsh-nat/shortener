@@ -84,7 +84,7 @@ func (r *DBRepository) AddBatch(context context.Context, host string, data []ser
 
 		res = append(res, services.URLData{
 			ID:    v.ID,
-			Short: "http://" + host + "/" + short,
+			Short: services.MakeFullShortURL(short, host),
 		})
 	}
 
