@@ -6,9 +6,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/kirsh-nat/shortener.git/internal/app"
 	"github.com/kirsh-nat/shortener.git/internal/domain"
-	"github.com/kirsh-nat/shortener.git/internal/services"
 )
 
 func (h *URLHandler) GetAPIShorten(w http.ResponseWriter, r *http.Request) {
@@ -28,17 +26,16 @@ func (h *URLHandler) GetAPIShorten(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		shortURL := services.MakeShortURL(dataURL.URL)
-		err = h.service.Add(r.Context(), shortURL, dataURL.URL)
-		var response []byte
-		result := "http://" + app.AppSettings.Addr + "/" + shortURL
-		var dErr *domain.DublicateError
+		result, err := h.shortenURL(r.Context(), dataURL.URL)
 
+		var dErr *domain.DublicateError
 		res := make(map[string]string, 1)
 		res["result"] = result
 
 		var jsonErr error
+		var response []byte
+		w.Header().Set("Content-Type", "application/json")
+
 		response, jsonErr = json.Marshal(res)
 		if jsonErr != nil {
 			http.Error(w, jsonErr.Error(), http.StatusInternalServerError)
@@ -55,7 +52,6 @@ func (h *URLHandler) GetAPIShorten(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-
 		w.WriteHeader(http.StatusCreated)
 		w.Write(response)
 
@@ -63,5 +59,4 @@ func (h *URLHandler) GetAPIShorten(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-
 }

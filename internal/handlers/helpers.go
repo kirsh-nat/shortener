@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"context"
 	"io"
 	"net/http"
 
+	"github.com/kirsh-nat/shortener.git/internal/app"
 	"github.com/kirsh-nat/shortener.git/internal/services"
 )
 
@@ -55,4 +57,15 @@ func (h *URLHandler) PingHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
+}
+
+func (h *URLHandler) shortenURL(ctx context.Context, original string) (string, error) {
+	shortURL := services.MakeShortURL(original)
+	err := h.service.Add(ctx, shortURL, original)
+	if err != nil {
+		return "", err
+	}
+	result := "http://" + app.AppSettings.Addr + "/" + shortURL
+
+	return result, nil
 }

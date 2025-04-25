@@ -2,16 +2,12 @@ package handlers
 
 import (
 	"compress/gzip"
-	"context"
 	"errors"
 	"io"
 	"net/http"
 	"net/url"
-	"time"
 
-	"github.com/kirsh-nat/shortener.git/internal/app"
 	"github.com/kirsh-nat/shortener.git/internal/domain"
-	"github.com/kirsh-nat/shortener.git/internal/services"
 )
 
 func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
@@ -47,16 +43,11 @@ func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortURL := services.MakeShortURL(parsedURL.String())
-
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
-
-	err = h.service.Add(ctx, shortURL, parsedURL.String())
+	shortURL, err := h.shortenURL(r.Context(), parsedURL.String())
 	var dErr *domain.DublicateError
 	var response string
 	if errors.As(err, &dErr) {
-		response = "http://" + app.AppSettings.Addr + "/" + shortURL
+		response = shortURL
 		w.WriteHeader(http.StatusConflict)
 		w.Write([]byte(response))
 		return
@@ -67,7 +58,7 @@ func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if response == "" {
-		response = "http://" + app.AppSettings.Addr + "/" + shortURL
+		response = shortURL
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
