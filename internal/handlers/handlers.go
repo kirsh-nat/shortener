@@ -227,7 +227,7 @@ func (h *URLHandler) AddBatch(w http.ResponseWriter, r *http.Request) {
 
 	var res []byte
 
-	res, err = h.service.AddBatch(app.AppSettings.Addr, dataURL)
+	res, err = h.service.AddBatch(r.Context(), app.AppSettings.Addr, dataURL)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

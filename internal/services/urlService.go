@@ -23,7 +23,7 @@ func (s *URLService) Add(ctx context.Context, shortURL, originalURL string) erro
 }
 
 func (s *URLService) Get(ctx context.Context, short string) (string, error) {
-	longURL, err := s.repo.Get(short)
+	longURL, err := s.repo.Get(ctx, short)
 	if err != nil {
 		return "", err
 	}
@@ -34,6 +34,6 @@ func (s *URLService) Ping() error {
 	return s.repo.Ping()
 }
 
-func (s *URLService) AddBatch(host string, data []map[string]string) ([]byte, error) {
-	return s.repo.AddBatch(host, data)
+func (s *URLService) AddBatch(context context.Context, host string, data []map[string]string) ([]byte, error) {
+	return s.repo.AddBatch(context, host, data)
 }

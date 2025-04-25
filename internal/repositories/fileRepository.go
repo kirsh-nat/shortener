@@ -73,7 +73,7 @@ func (r *FileRepository) Add(ctx context.Context, shortURL, originalURL string) 
 	return nil
 }
 
-func (r *FileRepository) Get(short string) (string, error) {
+func (r *FileRepository) Get(_ context.Context, short string) (string, error) {
 	file, err := os.Open(r.filePath)
 	if err != nil {
 		return "", err
@@ -114,7 +114,7 @@ func (r *FileRepository) Ping() error {
 	return nil
 }
 
-func (r *FileRepository) AddBatch(host string, data []map[string]string) ([]byte, error) {
+func (r *FileRepository) AddBatch(_ context.Context, host string, data []map[string]string) ([]byte, error) {
 	var res []urlBatchData
 
 	file, err := os.OpenFile(r.filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)

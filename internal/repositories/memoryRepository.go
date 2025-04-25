@@ -27,7 +27,7 @@ func (r *MemoryRepository) Add(ctx context.Context, shortURL, originalURL string
 
 }
 
-func (r *MemoryRepository) Get(short string) (string, error) {
+func (r *MemoryRepository) Get(_ context.Context, short string) (string, error) {
 	if val, ok := r.store[short]; ok {
 		return val, nil
 	}
@@ -39,7 +39,7 @@ func (r *MemoryRepository) Ping() error {
 	return nil
 }
 
-func (r *MemoryRepository) AddBatch(host string, data []map[string]string) ([]byte, error) {
+func (r *MemoryRepository) AddBatch(context context.Context, host string, data []map[string]string) ([]byte, error) {
 	type urlData struct {
 		ID    string `json:"correlation_id"`
 		Short string `json:"short_url"`
@@ -52,7 +52,7 @@ func (r *MemoryRepository) AddBatch(host string, data []map[string]string) ([]by
 		original := v["original_url"]
 		short := services.MakeShortURL(original)
 
-		err := r.Add(context.Background(), short, original)
+		err := r.Add(context, short, original)
 		if err != nil {
 			return nil, err
 		}

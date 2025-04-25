@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/kirsh-nat/shortener.git/internal/domain"
@@ -37,8 +36,8 @@ func (r *DBRepository) Add(ctx context.Context, shortURL, originalURL string) er
 
 }
 
-func (r *DBRepository) Get(short string) (string, error) {
-	row := r.db.QueryRowContext(context.Background(),
+func (r *DBRepository) Get(context context.Context, short string) (string, error) {
+	row := r.db.QueryRowContext(context,
 		"SELECT original_url from links where short_url = $1", short)
 	var long sql.NullString
 
@@ -61,7 +60,7 @@ func (r *DBRepository) Ping() error {
 	return nil
 }
 
-func (r *DBRepository) AddBatch(host string, data []map[string]string) ([]byte, error) {
+func (r *DBRepository) AddBatch(context context.Context, host string, data []map[string]string) ([]byte, error) {
 	type urlData struct {
 		ID    string `json:"correlation_id"`
 		Short string `json:"short_url"`
@@ -75,10 +74,7 @@ func (r *DBRepository) AddBatch(host string, data []map[string]string) ([]byte, 
 	}
 	defer tx.Rollback()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	stmt, err := tx.PrepareContext(ctx,
+	stmt, err := tx.PrepareContext(context,
 		"INSERT INTO links (short_url, original_url) VALUES($1, $2)")
 	if err != nil {
 		return nil, err
@@ -90,7 +86,7 @@ func (r *DBRepository) AddBatch(host string, data []map[string]string) ([]byte, 
 		original := v["original_url"]
 		short := services.MakeShortURL(original)
 
-		_, err := stmt.ExecContext(ctx, short, original)
+		_, err := stmt.ExecContext(context, short, original)
 		if err != nil {
 			return nil, err
 		}
