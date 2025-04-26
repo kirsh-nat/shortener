@@ -10,8 +10,7 @@ import (
 
 	"github.com/kirsh-nat/shortener.git/internal/app"
 	"github.com/kirsh-nat/shortener.git/internal/config"
-	"github.com/kirsh-nat/shortener.git/internal/repositories/fileRepository"
-	"github.com/kirsh-nat/shortener.git/internal/repositories/memoryRepository"
+	memoryrepository "github.com/kirsh-nat/shortener.git/internal/repositories/memoryRepository"
 	"github.com/kirsh-nat/shortener.git/internal/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,7 +36,7 @@ func testRequest(t *testing.T, ts *httptest.Server, method, path string, body st
 }
 
 func TestPingHandler(t *testing.T) {
-	repo := fileRepository.NewFileRepository(app.AppSettings.FilePath)
+	repo := memoryrepository.NewMemoryRepository()
 	service := services.NewURLService(repo)
 	handler := NewURLHandler(service)
 
@@ -51,7 +50,7 @@ func TestPingHandler(t *testing.T) {
 }
 
 func TestCreateShortURL(t *testing.T) {
-	repo := memoryRepository.NewMemoryRepository()
+	repo := memoryrepository.NewMemoryRepository()
 	service := services.NewURLService(repo)
 	handler := NewURLHandler(service)
 
@@ -91,7 +90,7 @@ func TestCreateShortURL(t *testing.T) {
 
 func TestGetURL(t *testing.T) {
 
-	repo := memoryRepository.NewMemoryRepository()
+	repo := memoryrepository.NewMemoryRepository()
 	service := services.NewURLService(repo)
 	handler := NewURLHandler(service)
 
@@ -170,7 +169,7 @@ func TestGetURL(t *testing.T) {
 }
 
 func TestAPIShorten(t *testing.T) {
-	repo := memoryRepository.NewMemoryRepository()
+	repo := memoryrepository.NewMemoryRepository()
 	service := services.NewURLService(repo)
 	handler := NewURLHandler(service)
 

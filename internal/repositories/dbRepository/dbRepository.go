@@ -1,4 +1,4 @@
-package DBRepository
+package dbrepository
 
 import (
 	"database/sql"

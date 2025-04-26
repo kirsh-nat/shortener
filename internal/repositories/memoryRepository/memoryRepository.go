@@ -1,4 +1,4 @@
-package memoryRepository
+package memoryrepository
 
 import (
 	"sync"

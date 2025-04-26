@@ -7,9 +7,9 @@ import (
 	"github.com/kirsh-nat/shortener.git/internal/config"
 	"github.com/kirsh-nat/shortener.git/internal/db"
 	"github.com/kirsh-nat/shortener.git/internal/handlers"
-	DBRepository "github.com/kirsh-nat/shortener.git/internal/repositories/dbRepository"
-	"github.com/kirsh-nat/shortener.git/internal/repositories/fileRepository"
-	"github.com/kirsh-nat/shortener.git/internal/repositories/memoryRepository"
+	dbrepository "github.com/kirsh-nat/shortener.git/internal/repositories/dbRepository"
+	filerepository "github.com/kirsh-nat/shortener.git/internal/repositories/fileRepository"
+	memoryrepository "github.com/kirsh-nat/shortener.git/internal/repositories/memoryRepository"
 	"github.com/kirsh-nat/shortener.git/internal/services"
 )
 
@@ -23,13 +23,13 @@ func main() {
 
 	if app.AppSettings.SetDBConnection != "" {
 		app.DB = db.DBConnect(app.AppSettings.SetDBConnection, app.Sugar)
-		repo = DBRepository.NewDBRepository(app.DB)
+		repo = dbrepository.NewDBRepository(app.DB)
 
 	} else if app.AppSettings.FilePath != "" {
-		repo = fileRepository.NewFileRepository(app.AppSettings.FilePath)
+		repo = filerepository.NewFileRepository(app.AppSettings.FilePath)
 
 	} else {
-		repo = memoryRepository.NewMemoryRepository()
+		repo = memoryrepository.NewMemoryRepository()
 
 	}
 	service := services.NewURLService(repo)
