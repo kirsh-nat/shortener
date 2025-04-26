@@ -5,17 +5,19 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
+
+	"github.com/kirsh-nat/shortener.git/internal/config"
 )
 
 var (
-	AppSettings *Config
+	AppSettings *config.Config
 	Sugar       zap.SugaredLogger
 	DB          *sql.DB
 )
 
 func SetAppConfig() {
 	setLogger()
-	AppSettings = new(Config)
+	AppSettings = new(config.Config)
 	Sugar.Infow(
 		"Starting server",
 		"addr", AppSettings.Addr,

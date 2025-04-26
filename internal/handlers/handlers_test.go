@@ -9,7 +9,9 @@ import (
 	"testing"
 
 	"github.com/kirsh-nat/shortener.git/internal/app"
-	"github.com/kirsh-nat/shortener.git/internal/repositories"
+	"github.com/kirsh-nat/shortener.git/internal/config"
+	"github.com/kirsh-nat/shortener.git/internal/repositories/fileRepository"
+	"github.com/kirsh-nat/shortener.git/internal/repositories/memoryRepository"
 	"github.com/kirsh-nat/shortener.git/internal/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,7 +19,7 @@ import (
 
 func init() {
 	app.SetAppConfig()
-	app.ValidateConfig(app.AppSettings)
+	config.ValidateConfig(app.AppSettings)
 }
 
 func testRequest(t *testing.T, ts *httptest.Server, method, path string, body string) (*http.Response, string) {
@@ -35,7 +37,7 @@ func testRequest(t *testing.T, ts *httptest.Server, method, path string, body st
 }
 
 func TestPingHandler(t *testing.T) {
-	repo := repositories.NewFileRepository(app.AppSettings.FilePath)
+	repo := fileRepository.NewFileRepository(app.AppSettings.FilePath)
 	service := services.NewURLService(repo)
 	handler := NewURLHandler(service)
 
@@ -49,7 +51,7 @@ func TestPingHandler(t *testing.T) {
 }
 
 func TestCreateShortURL(t *testing.T) {
-	repo := repositories.NewMemoryRepository()
+	repo := memoryRepository.NewMemoryRepository()
 	service := services.NewURLService(repo)
 	handler := NewURLHandler(service)
 
@@ -89,7 +91,7 @@ func TestCreateShortURL(t *testing.T) {
 
 func TestGetURL(t *testing.T) {
 
-	repo := repositories.NewMemoryRepository()
+	repo := memoryRepository.NewMemoryRepository()
 	service := services.NewURLService(repo)
 	handler := NewURLHandler(service)
 
@@ -168,7 +170,7 @@ func TestGetURL(t *testing.T) {
 }
 
 func TestAPIShorten(t *testing.T) {
-	repo := repositories.NewMemoryRepository()
+	repo := memoryRepository.NewMemoryRepository()
 	service := services.NewURLService(repo)
 	handler := NewURLHandler(service)
 
@@ -180,7 +182,7 @@ func TestAPIShorten(t *testing.T) {
 		req    string
 	}{
 		{"/api/shorten", "{\"result\":\"http://localhost:8080/8a9923\"}", http.StatusCreated, http.MethodPost, "{\"url\":\"https://practicum.yandex.ru\"}"},
-		{"/api/shorten", "", http.StatusMethodNotAllowed, http.MethodGet, "{\"url\":\"https://practicum.yandex.ru\"}"},
+		{"/api/shorten", "Method not allowed", http.StatusMethodNotAllowed, http.MethodGet, "{\"url\":\"https://practicum.yandex.ru\"}"},
 	}
 	for _, v := range testTable {
 		req := httptest.NewRequest(v.method, v.url, strings.NewReader(v.req))

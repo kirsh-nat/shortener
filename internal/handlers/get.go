@@ -3,9 +3,7 @@ package handlers
 import "net/http"
 
 func (h *URLHandler) Get(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		w.Write([]byte("Post method not allowed"))
+	if !h.checkMethod(w, r, http.MethodGet) {
 		return
 	}
 

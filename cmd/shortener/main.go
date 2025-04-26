@@ -4,28 +4,32 @@ import (
 	"net/http"
 
 	"github.com/kirsh-nat/shortener.git/internal/app"
+	"github.com/kirsh-nat/shortener.git/internal/config"
+	"github.com/kirsh-nat/shortener.git/internal/db"
 	"github.com/kirsh-nat/shortener.git/internal/handlers"
-	"github.com/kirsh-nat/shortener.git/internal/repositories"
+	DBRepository "github.com/kirsh-nat/shortener.git/internal/repositories/dbRepository"
+	"github.com/kirsh-nat/shortener.git/internal/repositories/fileRepository"
+	"github.com/kirsh-nat/shortener.git/internal/repositories/memoryRepository"
 	"github.com/kirsh-nat/shortener.git/internal/services"
 )
 
 func main() {
 	app.SetAppConfig()
 
-	app.ParseFlags(app.AppSettings)
-	app.ValidateConfig(app.AppSettings)
+	config.ParseFlags(app.AppSettings)
+	config.ValidateConfig(app.AppSettings)
 
 	var repo services.URLRepository
 
 	if app.AppSettings.SetDBConnection != "" {
-		app.DB = app.DBConnect(app.AppSettings.SetDBConnection)
-		repo = repositories.NewDBRepository(app.DB)
+		app.DB = db.DBConnect(app.AppSettings.SetDBConnection, app.Sugar)
+		repo = DBRepository.NewDBRepository(app.DB)
 
 	} else if app.AppSettings.FilePath != "" {
-		repo = repositories.NewFileRepository(app.AppSettings.FilePath)
+		repo = fileRepository.NewFileRepository(app.AppSettings.FilePath)
 
 	} else {
-		repo = repositories.NewMemoryRepository()
+		repo = memoryRepository.NewMemoryRepository()
 
 	}
 	service := services.NewURLService(repo)

@@ -11,12 +11,9 @@ import (
 )
 
 func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		w.Write([]byte("Method not allowed"))
+	if !h.checkMethod(w, r, http.MethodPost) {
 		return
 	}
-
 	var body io.Reader = r.Body
 	if r.Header.Get("Content-Encoding") == "gzip" {
 		gz, err := gzip.NewReader(r.Body)

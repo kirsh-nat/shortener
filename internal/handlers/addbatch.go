@@ -10,9 +10,7 @@ import (
 )
 
 func (h *URLHandler) AddBatch(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		w.Write([]byte("Method not allowed"))
+	if !h.checkMethod(w, r, http.MethodPost) {
 		return
 	}
 
