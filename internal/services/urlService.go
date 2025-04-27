@@ -15,8 +15,8 @@ type URLData struct {
 }
 
 type UserURLData struct {
-	Short    string `json:"ShortURL"`
-	Original string `json:"OriginalURL"`
+	Short    string `json:"short_url"`
+	Original string `json:"original_url"`
 }
 
 type URLService struct {

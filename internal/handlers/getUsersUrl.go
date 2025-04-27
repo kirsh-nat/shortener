@@ -35,10 +35,13 @@ func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp, jsonErr := json.Marshal(shortUrls)
+
 	if jsonErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	app.Sugar.Debug("Json user urls: ", user.UUID, " shortUrls ", resp)
+
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 }
