@@ -62,9 +62,9 @@ func (h *URLHandler) PingHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-func (h *URLHandler) shortenURL(ctx context.Context, original, userId string) (string, error) {
+func (h *URLHandler) shortenURL(ctx context.Context, original, userID string) (string, error) {
 	shortURL := services.MakeFullShortURL(services.MakeShortURL(original), app.AppSettings.Addr)
-	err := h.service.Add(ctx, shortURL, original, userId)
+	err := h.service.Add(ctx, shortURL, original, userID)
 	var dErr *domain.DublicateError
 
 	if err != nil {

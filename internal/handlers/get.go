@@ -1,6 +1,11 @@
 package handlers
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/kirsh-nat/shortener.git/internal/app"
+	"github.com/kirsh-nat/shortener.git/internal/services"
+)
 
 func (h *URLHandler) Get(w http.ResponseWriter, r *http.Request) {
 	if !h.checkMethod(w, r, http.MethodGet) {
@@ -12,7 +17,7 @@ func (h *URLHandler) Get(w http.ResponseWriter, r *http.Request) {
 	var redirectURL string
 	var err error
 
-	redirectURL, err = h.service.Get(r.Context(), short)
+	redirectURL, err = h.service.Get(r.Context(), services.MakeFullShortURL(short, app.AppSettings.Addr))
 
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
