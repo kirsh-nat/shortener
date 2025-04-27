@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/kirsh-nat/shortener.git/internal/app"
 	"github.com/kirsh-nat/shortener.git/internal/domain"
 )
 
@@ -44,6 +45,7 @@ func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
+	app.Sugar.Infow("ADD user urls: ", user.UUID, " parsedURL ", parsedURL.String())
 
 	shortURL, err := h.shortenURL(r.Context(), parsedURL.String(), user.UUID)
 	var dErr *domain.DublicateError
