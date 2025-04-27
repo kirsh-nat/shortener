@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/kirsh-nat/shortener.git/internal/domain"
@@ -12,7 +11,6 @@ import (
 
 func (h *URLHandler) GetAPIShorten(w http.ResponseWriter, r *http.Request) {
 	if !h.checkMethod(w, r, http.MethodPost) {
-		fmt.Println("Method not allowed")
 		return
 	}
 
@@ -30,8 +28,12 @@ func (h *URLHandler) GetAPIShorten(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	user, ok := h.setCookieToken(w, r)
+	if !ok {
+		return
+	}
 
-	result, err := h.shortenURL(r.Context(), dataURL.URL)
+	result, err := h.shortenURL(r.Context(), dataURL.URL, user.UUID)
 
 	var dErr *domain.DublicateError
 	res := make(map[string]string, 1)

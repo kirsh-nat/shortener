@@ -26,6 +26,11 @@ func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
 		body = gz
 	}
 
+	user, ok := h.setCookieToken(w, r)
+	if !ok {
+		return
+	}
+
 	reqURL, err := io.ReadAll(body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -40,7 +45,7 @@ func (h *URLHandler) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortURL, err := h.shortenURL(r.Context(), parsedURL.String())
+	shortURL, err := h.shortenURL(r.Context(), parsedURL.String(), user.UUID)
 	var dErr *domain.DublicateError
 	var response string
 	if errors.As(err, &dErr) {

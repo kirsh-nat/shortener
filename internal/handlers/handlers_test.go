@@ -10,7 +10,6 @@ import (
 
 	"github.com/kirsh-nat/shortener.git/internal/app"
 	"github.com/kirsh-nat/shortener.git/internal/config"
-	"github.com/kirsh-nat/shortener.git/internal/models"
 	memoryrepository "github.com/kirsh-nat/shortener.git/internal/repositories/memoryRepository"
 	"github.com/kirsh-nat/shortener.git/internal/services"
 	"github.com/stretchr/testify/assert"
@@ -189,9 +188,7 @@ func TestAPIShorten(t *testing.T) {
 		req := httptest.NewRequest(v.method, v.url, strings.NewReader(v.req))
 		resp := httptest.NewRecorder()
 
-		ctx := context.WithValue(req.Context(), UserKey{}, &models.User{})
-
-		handler.GetAPIShorten(resp, req.WithContext(ctx))
+		handler.GetAPIShorten(resp, req)
 		assert.Equal(t, v.status, resp.Code)
 		if v.want == "" {
 			if resp.Body.String() != v.want {

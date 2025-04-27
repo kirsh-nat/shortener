@@ -8,7 +8,7 @@ import (
 	"github.com/kirsh-nat/shortener.git/internal/services"
 )
 
-func (r *FileRepository) AddBatch(_ context.Context, host string, data []services.BatchItem) ([]services.URLData, error) {
+func (r *FileRepository) AddBatch(_ context.Context, host, userID string, data []services.BatchItem) ([]services.URLData, error) {
 	var res []services.URLData
 
 	file, err := os.OpenFile(r.filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)

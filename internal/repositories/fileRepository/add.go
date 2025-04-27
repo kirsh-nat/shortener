@@ -6,7 +6,8 @@ import (
 	"os"
 )
 
-func (r *FileRepository) Add(ctx context.Context, shortURL, originalURL string) error {
+// TODO: make user url store
+func (r *FileRepository) Add(ctx context.Context, shortURL, originalURL, _ string) error {
 	file, err := os.OpenFile(r.filePath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		return err

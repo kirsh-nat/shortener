@@ -8,7 +8,7 @@ import (
 
 func (r *MemoryRepository) Get(_ context.Context, short string) (string, error) {
 	if val, ok := r.store[short]; ok {
-		return val, nil
+		return val.OriginalURL, nil
 	}
 
 	return "", domain.ErrorURLNotFound

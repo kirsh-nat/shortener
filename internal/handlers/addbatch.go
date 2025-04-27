@@ -14,6 +14,11 @@ func (h *URLHandler) AddBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user, ok := h.setCookieToken(w, r)
+	if !ok {
+		return
+	}
+
 	var dataURL []services.BatchItem
 
 	var buf bytes.Buffer
@@ -29,7 +34,7 @@ func (h *URLHandler) AddBatch(w http.ResponseWriter, r *http.Request) {
 
 	var res []services.URLData
 
-	res, err = h.service.AddBatch(r.Context(), app.AppSettings.Addr, dataURL)
+	res, err = h.service.AddBatch(r.Context(), app.AppSettings.Addr, user.UUID, dataURL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

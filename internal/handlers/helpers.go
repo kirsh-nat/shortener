@@ -8,6 +8,7 @@ import (
 
 	"github.com/kirsh-nat/shortener.git/internal/app"
 	"github.com/kirsh-nat/shortener.git/internal/domain"
+	"github.com/kirsh-nat/shortener.git/internal/models/user"
 	"github.com/kirsh-nat/shortener.git/internal/services"
 )
 
@@ -61,18 +62,65 @@ func (h *URLHandler) PingHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-func (h *URLHandler) shortenURL(ctx context.Context, original string) (string, error) {
-	shortURL := services.MakeShortURL(original)
-	err := h.service.Add(ctx, shortURL, original)
+func (h *URLHandler) shortenURL(ctx context.Context, original, userId string) (string, error) {
+	shortURL := services.MakeFullShortURL(services.MakeShortURL(original), app.AppSettings.Addr)
+	err := h.service.Add(ctx, shortURL, original, userId)
 	var dErr *domain.DublicateError
 
 	if err != nil {
 		if errors.As(err, &dErr) {
-			return services.MakeFullShortURL(shortURL, app.AppSettings.Addr), err
+			return shortURL, err
 		}
 		return "", err
 	}
-	result := services.MakeFullShortURL(shortURL, app.AppSettings.Addr)
+	result := shortURL
 
 	return result, nil
+}
+
+func (h *URLHandler) setCookieToken(w http.ResponseWriter, r *http.Request) (*user.User, bool) {
+	cookieToken, err := r.Cookie("token")
+	if err != nil || cookieToken == nil {
+		return h.createUserAndSetCookie(w)
+	}
+
+	user, err := user.GetUser(cookieToken.Value)
+	if err != nil {
+		return h.createUserAndSetCookie(w)
+	}
+
+	return user, true
+}
+
+func (h *URLHandler) createUserAndSetCookie(w http.ResponseWriter) (*user.User, bool) {
+	user, err := user.CreateUser()
+	if err != nil {
+		return nil, false
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:  "token",
+		Value: user.Token,
+		Path:  "/",
+	})
+	return user, true
+}
+
+func (h *URLHandler) getCookieToken(w http.ResponseWriter, r *http.Request) (*user.User, bool) {
+	cookieToken, err := r.Cookie("token")
+	if err != nil || cookieToken == nil {
+		return h.unauthorizedResponse(w)
+	}
+
+	user, err := user.GetUser(cookieToken.Value)
+	if err != nil {
+		return h.unauthorizedResponse(w)
+	}
+
+	return user, true
+}
+
+func (h *URLHandler) unauthorizedResponse(w http.ResponseWriter) (*user.User, bool) {
+	w.WriteHeader(http.StatusUnauthorized)
+	w.Write([]byte("Unauthorized"))
+	return nil, false
 }

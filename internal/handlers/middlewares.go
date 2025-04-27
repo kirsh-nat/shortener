@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/kirsh-nat/shortener.git/internal/app"
-	"github.com/kirsh-nat/shortener.git/internal/models"
 )
 
 type UserKey struct{}
@@ -88,9 +87,4 @@ func Middleware(h http.Handler) http.HandlerFunc {
 	}
 
 	return logFn
-}
-
-func GetUserFromContext(r *http.Request) (*models.User, bool) {
-	user, ok := r.Context().Value(UserKey{}).(*models.User)
-	return user, ok
 }

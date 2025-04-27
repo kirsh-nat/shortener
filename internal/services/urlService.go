@@ -9,20 +9,25 @@ type BatchItem struct {
 	Original string `json:"original_url"`
 }
 
-type URLRepository interface {
-	Add(ctx context.Context, shortURL, originalURL string) error
-	Get(context context.Context, short string) (string, error)
-	Ping() error
-	AddBatch(context context.Context, host string, data []BatchItem) ([]URLData, error)
-}
-
 type URLData struct {
 	ID    string `json:"correlation_id"`
 	Short string `json:"short_url"`
 }
 
+type UserURLData struct {
+	Short    string `json:"ShortURL"`
+	Original string `json:"OriginalURL"`
+}
+
 type URLService struct {
 	repo URLRepository
+}
+type URLRepository interface {
+	Add(ctx context.Context, shortURL, originalURL, userID string) error
+	Get(context context.Context, short string) (string, error)
+	Ping() error
+	AddBatch(context context.Context, host, userID string, data []BatchItem) ([]URLData, error)
+	GetUserURLs(ctx context.Context, userID string) ([]UserURLData, error)
 }
 
 func NewURLService(repo URLRepository) *URLService {
@@ -49,18 +54,14 @@ func (s *URLService) Ping() error {
 	return s.repo.Ping()
 }
 
-func (s *URLService) AddBatch(context context.Context, host string, data []BatchItem) ([]URLData, error) {
-	return s.repo.AddBatch(context, host, data)
+func (s *URLService) AddBatch(context context.Context, host, userID string, data []BatchItem) ([]URLData, error) {
+	return s.repo.AddBatch(context, host, userID, data)
 }
 
-func (s *URLService) DeleteBatch(shortURLs []string, userID string) {
-	s.repo.DeleteBatch(shortURLs, userID)
-}
+// func (s *URLService) DeleteBatch(shortURLs []string, userID string) {
+// 	s.repo.DeleteBatch(shortURLs, userID)
+// }
 
-func (s *URLService) AddUserURL(userID, short string) {
-	s.repo.AddUserURL(userID, short)
-}
-
-func (s *URLService) GetUserURLs(userID string) ([]string, error) {
-	return s.repo.GetUserURLs(userID)
+func (s *URLService) GetUserURLs(ctx context.Context, userID string) ([]UserURLData, error) {
+	return s.repo.GetUserURLs(ctx, userID)
 }
