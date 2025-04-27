@@ -97,7 +97,7 @@ func TestGetURL(t *testing.T) {
 	testID := "SVHZQO"
 	_, err := handler.service.Get(context.Background(), testID)
 	if err != nil {
-		handler.service.Add(context.Background(), testID, "https://yandex.ru/", "test")
+		handler.service.Add(context.Background(), services.MakeFullShortURL(testID, app.AppSettings.Addr), "https://yandex.ru/", "test")
 	}
 
 	type expected struct {
