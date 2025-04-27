@@ -12,7 +12,7 @@ func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, ok := h.getCookieToken(w, r)
+	user, ok := h.setCookieToken(w, r)
 	if !ok {
 		return
 	}
