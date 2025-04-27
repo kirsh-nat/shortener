@@ -2,17 +2,31 @@ package services
 
 import (
 	"context"
-
-	"github.com/kirsh-nat/shortener.git/internal/models"
 )
 
-type URLService struct {
-	repo     models.URLRepository
-	userURLs map[string][]string
+type BatchItem struct {
+	ID       string `json:"correlation_id"`
+	Original string `json:"original_url"`
 }
 
-func NewURLService(repo models.URLRepository) *URLService {
-	return &URLService{repo: repo, userURLs: make(map[string][]string)}
+type URLRepository interface {
+	Add(ctx context.Context, shortURL, originalURL string) error
+	Get(context context.Context, short string) (string, error)
+	Ping() error
+	AddBatch(context context.Context, host string, data []BatchItem) ([]URLData, error)
+}
+
+type URLData struct {
+	ID    string `json:"correlation_id"`
+	Short string `json:"short_url"`
+}
+
+type URLService struct {
+	repo URLRepository
+}
+
+func NewURLService(repo URLRepository) *URLService {
+	return &URLService{repo: repo}
 }
 
 func (s *URLService) Add(ctx context.Context, shortURL, originalURL string) error {
@@ -24,7 +38,7 @@ func (s *URLService) Add(ctx context.Context, shortURL, originalURL string) erro
 }
 
 func (s *URLService) Get(ctx context.Context, short string) (string, error) {
-	longURL, err := s.repo.Get(short)
+	longURL, err := s.repo.Get(ctx, short)
 	if err != nil {
 		return "", err
 	}
@@ -35,23 +49,6 @@ func (s *URLService) Ping() error {
 	return s.repo.Ping()
 }
 
-func (s *URLService) AddBatch(host string, data []map[string]string) ([]byte, error) {
-	return s.repo.AddBatch(host, data)
-}
-
-func (s *URLService) AddUserURL(userID, short string) {
-	if _, ok := s.userURLs[userID]; !ok {
-		s.userURLs[userID] = make([]string, 0)
-	}
-
-	s.userURLs[userID] = append(s.userURLs[userID], short)
-}
-
-func (s *URLService) GetUserURLs(userID string) []string {
-
-	if _, ok := s.userURLs[userID]; !ok {
-		return []string{}
-	}
-
-	return s.userURLs[userID]
+func (s *URLService) AddBatch(context context.Context, host string, data []BatchItem) ([]URLData, error) {
+	return s.repo.AddBatch(context, host, data)
 }
