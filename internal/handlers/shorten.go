@@ -34,7 +34,7 @@ func (h *URLHandler) GetAPIShorten(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app.Sugar.Infow("ADD SHORTEN user urls: ", user.UUID, " parsedURL ", parsedURL.String())
+	app.Sugar.Debug("ADD SHORTEN user urls: ", user.UUID, " parsedURL ", dataURL.URL)
 
 	result, err := h.shortenURL(r.Context(), dataURL.URL, user.UUID)
 

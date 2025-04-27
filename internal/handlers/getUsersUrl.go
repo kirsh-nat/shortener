@@ -19,7 +19,7 @@ func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 
 	shortUrls, err := h.service.GetUserURLs(r.Context(), user.UUID)
 
-	app.Sugar.Infow("Get user urls: ", user.UUID, " shortUrls ", shortUrls)
+	app.Sugar.Debug("Get user urls: ", user.UUID, " shortUrls ", shortUrls)
 	if err != nil {
 		app.Sugar.Errorw(err.Error(), "event", err)
 		w.WriteHeader(http.StatusBadRequest)
