@@ -14,8 +14,6 @@ func (h *URLHandler) GetUserURLs(w http.ResponseWriter, r *http.Request) {
 
 	user, ok := h.getCookieToken(w, r)
 	if !ok {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Unauthorized"))
 		return
 	}
 
