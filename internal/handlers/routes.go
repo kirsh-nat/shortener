@@ -4,9 +4,6 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	//"github.com/kirsh-nat/shortener.git/internal/handlers"
-	//"github.com/kirsh-nat/shortener.git/internal/handlers"
-	//"github.com/kirsh-nat/shortener.git/internal/handlers"
 )
 
 func Routes(handler *URLHandler) *chi.Mux {
@@ -19,7 +16,7 @@ func Routes(handler *URLHandler) *chi.Mux {
 	r.Get("/ping", http.HandlerFunc(Middleware(http.HandlerFunc(handler.PingHandler))))
 	r.Post("/api/shorten/batch", http.HandlerFunc(Middleware(http.HandlerFunc(handler.AddBatch))))
 	r.Get("/api/user/urls", http.HandlerFunc(Middleware(http.HandlerFunc(handler.GetUserURLs))))
-	// r.Delete("/api/user/urls", http.HandlerFunc(Middleware(http.HandlerFunc(handler.DeleteUserURLs))))
+	r.Delete("/api/user/urls", http.HandlerFunc(Middleware(http.HandlerFunc(handler.DeleteUserURLs))))
 
 	return r
 }

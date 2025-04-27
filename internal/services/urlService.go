@@ -28,6 +28,7 @@ type URLRepository interface {
 	Ping() error
 	AddBatch(context context.Context, host, userID string, data []BatchItem) ([]URLData, error)
 	GetUserURLs(ctx context.Context, userID string) ([]UserURLData, error)
+	DeleteBatch(shortURLs []string, userID string)
 }
 
 func NewURLService(repo URLRepository) *URLService {
@@ -58,9 +59,9 @@ func (s *URLService) AddBatch(context context.Context, host, userID string, data
 	return s.repo.AddBatch(context, host, userID, data)
 }
 
-// func (s *URLService) DeleteBatch(shortURLs []string, userID string) {
-// 	s.repo.DeleteBatch(shortURLs, userID)
-// }
+func (s *URLService) DeleteBatch(shortURLs []string, userID string) {
+	s.repo.DeleteBatch(shortURLs, userID)
+}
 
 func (s *URLService) GetUserURLs(ctx context.Context, userID string) ([]UserURLData, error) {
 	return s.repo.GetUserURLs(ctx, userID)

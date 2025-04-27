@@ -6,7 +6,6 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/kirsh-nat/shortener.git/internal/app"
 	"github.com/kirsh-nat/shortener.git/internal/domain"
 )
 
@@ -33,8 +32,6 @@ func (h *URLHandler) GetAPIShorten(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-
-	app.Sugar.Debug("ADD SHORTEN user urls: ", user.UUID, " parsedURL ", dataURL.URL)
 
 	result, err := h.shortenURL(r.Context(), dataURL.URL, user.UUID)
 

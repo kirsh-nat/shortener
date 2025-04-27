@@ -9,6 +9,7 @@ import (
 type UserDataURL struct {
 	UserID      string
 	OriginalURL string
+	Deleted     bool
 }
 
 type MemoryRepository struct {

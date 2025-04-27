@@ -13,7 +13,7 @@ func (r *MemoryRepository) Add(ctx context.Context, shortURL, originalURL, userI
 	if _, ok := r.store[shortURL]; ok {
 		return domain.NewDublicateError("Memory dublicate error", nil)
 	}
-	r.store[shortURL] = UserDataURL{OriginalURL: originalURL, UserID: userID}
+	r.store[shortURL] = UserDataURL{OriginalURL: originalURL, UserID: userID, Deleted: false}
 
 	return nil
 
