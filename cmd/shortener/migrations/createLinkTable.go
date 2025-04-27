@@ -18,8 +18,6 @@ func CreateLinkTable(db *sql.DB) {
 		CREATE UNIQUE INDEX IF NOT EXISTS short_url_unique ON links (short_url);
 	`)
 
-	//	CREATE UNIQUE INDEX short_url_unique ON links (short_url);
-
 	if err != nil {
 		log.Fatal(err)
 	}
