@@ -1,4 +1,4 @@
-package internal
+package services
 
 import (
 	"crypto/sha256"
@@ -15,4 +15,8 @@ func MakeShortURL(url string) string {
 	hashed := hash.Sum(nil)
 
 	return hex.EncodeToString(hashed)[:lenURL]
+}
+
+func MakeFullShortURL(codeURL, host string) string {
+	return "http://" + host + "/" + codeURL
 }
