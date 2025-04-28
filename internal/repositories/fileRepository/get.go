@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/kirsh-nat/shortener.git/internal/domain"
+	"github.com/kirsh-nat/shortener.git/internal/services"
 )
 
 func (r *FileRepository) Get(_ context.Context, short string) (string, error) {
@@ -14,13 +15,15 @@ func (r *FileRepository) Get(_ context.Context, short string) (string, error) {
 	}
 	defer file.Close()
 
-	data := make(map[string]string)
+	data := make(map[string]services.UserURLData)
 	if err := r.loadData(file, &data); err != nil {
 		return "", err
 	}
 
-	if val, ok := data[short]; ok {
-		return val, nil
+	for _, v := range data {
+		if v.Short == short {
+			return v.Original, nil
+		}
 	}
 
 	return "", domain.ErrorURLNotFound

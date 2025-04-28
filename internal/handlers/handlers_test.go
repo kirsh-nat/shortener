@@ -180,7 +180,6 @@ func TestAPIShorten(t *testing.T) {
 		method string
 		req    string
 	}{
-		//		{"/", "test.ru", http.StatusCreated, http.MethodPost, "??"},
 		{"/api/shorten", "{\"result\":\"http://localhost:8080/8a9923\"}", http.StatusCreated, http.MethodPost, "{\"url\":\"https://practicum.yandex.ru\"}"},
 		{"/api/shorten", "Method not allowed", http.StatusMethodNotAllowed, http.MethodGet, "{\"url\":\"https://practicum.yandex.ru\"}"},
 	}

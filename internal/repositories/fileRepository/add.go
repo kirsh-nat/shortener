@@ -4,22 +4,24 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+
+	"github.com/kirsh-nat/shortener.git/internal/services"
 )
 
-// TODO: make user url store
-func (r *FileRepository) Add(ctx context.Context, shortURL, originalURL, _ string) error {
+func (r *FileRepository) Add(ctx context.Context, shortURL, originalURL, userID string) error {
 	file, err := os.OpenFile(r.filePath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	data := make(map[string]string)
+	data := make(map[string]services.UserURLData)
 	if err := r.loadData(file, &data); err != nil {
 		return err
 	}
 
-	data[shortURL] = originalURL
+	urlData := services.UserURLData{Short: shortURL, Original: originalURL}
+	data[userID] = urlData
 
 	tempFilePath := r.filePath + ".tmp"
 	tempFile, err := os.Create(tempFilePath)
