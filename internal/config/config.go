@@ -6,18 +6,20 @@ import (
 )
 
 const (
-	defAddr    string = "localhost:8080"    // Дефолтный адрес запуска HTTP-сервера
-	defResp    string = "localhost:8080"    // Дефолтный базовый адрес результирующего сокращённого URL
-	defPath    string = "/tmp/urls.txt"     // Дефолтный адрес файла с ссылками
-	defPathVar string = "FILE_STORAGE_PATH" // Переменная окружения для файла с ссылками
-	srvAddrVar string = "SERVER_ADDRESS"    // Переменная окружения для адреса запуска HTTP-сервера
-	webAddrVar string = "WEB_ADDRESS"       // Переменная окружения для базового адреса результирующего сокращённого URL
+	defAddr         string = "localhost:8080"    // Дефолтный адрес запуска HTTP-сервера
+	defResp         string = "localhost:8080"    // Дефолтный базовый адрес результирующего сокращённого URL
+	defPath         string = "/tmp/urls.txt"     // Дефолтный адрес файла с ссылками
+	defPathVar      string = "FILE_STORAGE_PATH" // Переменная окружения для файла с ссылками
+	srvAddrVar      string = "SERVER_ADDRESS"    // Переменная окружения для адреса запуска HTTP-сервера
+	webAddrVar      string = "WEB_ADDRESS"       // Переменная окружения для базового адреса результирующего сокращённого URL
+	SetDBConnection string = "DATABASE_DSN"      // Переменная окружения для базового адреса результирующего сокращённого URL
 )
 
 type Config struct {
-	Addr     string
-	Resp     string
-	FilePath string
+	Addr            string
+	Resp            string
+	FilePath        string
+	SetDBConnection string
 }
 
 func ValidateConfig(c *Config) {
@@ -42,8 +44,13 @@ func ParseFlags(c *Config) {
 	)
 
 	flag.StringVar(&c.FilePath,
-		"f", defPath,
+		"f", "",
 		"Путь к файлу с ссылками",
+	)
+
+	flag.StringVar(&c.SetDBConnection,
+		"d", "",
+		"Строка подключения к базе данных",
 	)
 
 	flag.Parse()
@@ -56,5 +63,8 @@ func ParseFlags(c *Config) {
 	}
 	if envPath := os.Getenv(defPathVar); envPath != "" {
 		c.FilePath = envPath
+	}
+	if envPath := os.Getenv(SetDBConnection); envPath != "" {
+		c.SetDBConnection = envPath
 	}
 }
